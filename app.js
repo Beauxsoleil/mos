@@ -1,0 +1,386 @@
+"use strict";
+
+const LINE_SCORES = ["GT", "GM", "EL", "CL", "MM", "SC", "CO", "FA", "OF", "ST"];
+const PULHES = {
+  P: "Physical capacity",
+  U: "Upper extremities",
+  L: "Lower extremities",
+  H: "Hearing",
+  E: "Eyes",
+  S: "Psychiatric",
+};
+
+const state = {
+  catalog: [],
+  categories: [],
+  evaluation: [],
+  saved: new Set(JSON.parse(localStorage.getItem("idahoMosSaved") || "[]")),
+};
+
+const $ = (selector, scope = document) => scope.querySelector(selector);
+const $$ = (selector, scope = document) => [...scope.querySelectorAll(selector)];
+const escapeHtml = (value = "") => String(value).replace(/[&<>'"]/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[char]));
+
+async function init() {
+  buildFormFields();
+  bindEvents();
+  try {
+    const response = await fetch("./data/mos.json");
+    if (!response.ok) throw new Error(`Catalog request failed: ${response.status}`);
+    const data = await response.json();
+    state.catalog = data.records;
+    state.categories = [...new Set(state.catalog.map(record => record.category))].sort();
+    populateCategoryFilters();
+    renderCareers();
+    renderSaved();
+  } catch (error) {
+    console.error(error);
+    $("#career-list").innerHTML = `<div class="empty-state"><h2>Catalog unavailable</h2><p>Reload the page or open the raw MOS catalog from the repository.</p></div>`;
+  }
+  route();
+}
+
+function buildFormFields() {
+  $("#line-score-grid").innerHTML = LINE_SCORES.map(score => `
+    <label for="score-${score}">${score}
+      <input id="score-${score}" name="${score}" type="number" inputmode="numeric" min="0" max="200" step="1" autocomplete="off" required aria-describedby="error-${score}">
+      <span class="field-error" id="error-${score}"></span>
+    </label>`).join("");
+  $("#pulhes-grid").innerHTML = Object.entries(PULHES).map(([code, label]) => `
+    <label for="pulhes-${code}">${code}<small>${label}</small>
+      <select id="pulhes-${code}" name="pulhes${code}" required aria-describedby="error-pulhes-${code}">
+        <option value="">Select</option><option value="unknown">Not yet rated</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+      </select><span class="field-error" id="error-pulhes-${code}"></span>
+    </label>`).join("");
+}
+
+function bindEvents() {
+  window.addEventListener("hashchange", route);
+  $$('[data-route]').forEach(link => link.addEventListener("click", () => setTimeout(route)));
+  $$('[data-route-button]').forEach(button => button.addEventListener("click", () => navigate(button.dataset.routeButton)));
+  $("#eligibility-form").addEventListener("submit", handleEvaluation);
+  $("#clear-form").addEventListener("click", clearForm);
+  $("#career-search").addEventListener("input", renderCareers);
+  $("#career-category").addEventListener("change", renderCareers);
+  $("#career-availability").addEventListener("change", renderCareers);
+  $("#result-search").addEventListener("input", renderResults);
+  $("#result-category").addEventListener("change", renderResults);
+  $("#result-status").addEventListener("change", renderResults);
+  document.addEventListener("click", handleDelegatedClick);
+  $("#mos-dialog .dialog-close").addEventListener("click", () => $("#mos-dialog").close());
+  $("#mos-dialog").addEventListener("click", event => {
+    if (event.target === $("#mos-dialog")) $("#mos-dialog").close();
+  });
+}
+
+function route() {
+  const routeName = location.hash.replace("#", "") || "home";
+  const allowed = ["home", "eligibility", "results", "careers", "saved", "recruiter"];
+  const target = allowed.includes(routeName) ? routeName : "home";
+  $$('[data-view]').forEach(view => view.hidden = view.dataset.view !== target);
+  $$('[data-route]').forEach(link => {
+    const active = link.dataset.route === target || (target === "results" && link.dataset.route === "eligibility");
+    if (active) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current");
+  });
+  if (target === "saved") renderSaved();
+  $("#main").focus({preventScroll: true});
+  window.scrollTo({top: 0, behavior: "instant"});
+}
+
+function navigate(view) {
+  location.hash = view;
+}
+
+function populateCategoryFilters() {
+  for (const id of ["career-category", "result-category"]) {
+    const select = $(`#${id}`);
+    state.categories.forEach(category => select.insertAdjacentHTML("beforeend", `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`));
+  }
+}
+
+function handleEvaluation(event) {
+  event.preventDefault();
+  clearValidationErrors();
+  const form = new FormData(event.currentTarget);
+  const errors = [];
+  const input = {lineScores: {}, pulhes: {}};
+
+  for (const score of LINE_SCORES) {
+    const raw = form.get(score);
+    const value = Number(raw);
+    if (raw === "" || !Number.isInteger(value) || value < 0 || value > 200) {
+      errors.push({field: `score-${score}`, message: `${score} must be a whole number from 0 to 200.`});
+    } else input.lineScores[score] = value;
+  }
+  for (const factor of Object.keys(PULHES)) {
+    const raw = form.get(`pulhes${factor}`);
+    if (!raw) errors.push({field: `pulhes-${factor}`, message: `${factor} must be selected.`});
+    else input.pulhes[factor] = raw === "unknown" ? null : Number(raw);
+  }
+  for (const field of ["colorVision", "citizenship", "driversLicense", "clearanceEligible", "splitTrainingOption", "lineScoreWaiverRequested"]) {
+    const value = form.get(field);
+    if (!value) errors.push({field, message: `${fieldLabel(field)} must be selected.`});
+    input[field] = value;
+  }
+
+  if (errors.length) {
+    showValidationErrors(errors);
+    return;
+  }
+
+  state.evaluation = state.catalog.map(record => evaluateMos(record, input)).sort(resultSort);
+  renderResults();
+  navigate("results");
+}
+
+function fieldLabel(field) {
+  return ({colorVision:"Color vision",citizenship:"Citizenship",driversLicense:"Driver’s license",clearanceEligible:"Clearance eligibility",splitTrainingOption:"Split Training Option",lineScoreWaiverRequested:"Waiver scenario"})[field] || field;
+}
+
+function clearValidationErrors() {
+  $("#error-summary").hidden = true;
+  $$('[aria-invalid="true"]').forEach(field => field.removeAttribute("aria-invalid"));
+  $$(".field-error").forEach(node => node.textContent = "");
+}
+
+function showValidationErrors(errors) {
+  const summary = $("#error-summary");
+  summary.innerHTML = `<h2>Check ${errors.length} field${errors.length === 1 ? "" : "s"}</h2><ul>${errors.map(error => `<li><a href="#${escapeHtml(error.field)}">${escapeHtml(error.message)}</a></li>`).join("")}</ul>`;
+  summary.hidden = false;
+  errors.forEach(error => {
+    const field = document.getElementById(error.field) || $(`[name="${error.field}"]`);
+    if (field) {
+      field.setAttribute("aria-invalid", "true");
+      const message = document.getElementById(`error-${error.field}`);
+      if (message) message.textContent = error.message;
+    }
+  });
+  summary.focus();
+}
+
+function clearForm() {
+  $("#eligibility-form").reset();
+  clearValidationErrors();
+  state.evaluation = [];
+  localStorage.removeItem("idahoMosInputs");
+}
+
+function evaluateMos(record, input) {
+  const criteria = [];
+  const line = evaluateLineRule(record.requirements.line_score_text, input.lineScores, input.lineScoreWaiverRequested === "yes", record.title);
+  criteria.push({...line, kind: "Line score"});
+  criteria.push({...evaluatePulhes(record.requirements.pulhes_text, input.pulhes), kind: "PULHES"});
+  criteria.push({...evaluateVision(record.requirements.vision_text, input.colorVision), kind: "Color vision"});
+
+  const checks = record.requirements.excel_checks || {};
+  criteria.push(evaluateAdministrative(checks.security_clearance, input.clearanceEligible, "Clearance screening"));
+  criteria.push(evaluateAdministrative(checks.drivers_license, input.driversLicense, "Driver’s license"));
+  criteria.push(evaluateAdministrative(checks.citizenship, input.citizenship === "us_citizen" ? "yes" : input.citizenship === "non_citizen" ? "no" : "unknown", "Citizenship"));
+  criteria.push(evaluateAdministrative(checks.split_training_option, input.splitTrainingOption, "Split Training Option"));
+  criteria.push(evaluateAdministrative(checks.line_score_waiver, input.lineScoreWaiverRequested, "Workbook waiver condition", true));
+
+  const relevant = criteria.filter(item => item.status !== "not_applicable");
+  let status = "eligible";
+  if (relevant.some(item => item.status === "fail")) status = "ineligible";
+  else if (relevant.some(item => item.status === "unknown")) status = "review";
+  else if (line.status === "waiver") status = "waiver";
+
+  return {...record, eligibility: {status, criteria, scoreGap: line.gap || 0}};
+}
+
+function evaluateLineRule(rawRule, scores, waiverRequested, title) {
+  const rule = String(rawRule || "N/A").trim();
+  if (!rule || /^N\/?A$/i.test(rule)) return {status: "pass", summary: "No line-score threshold in the workbook", required: rule || "N/A"};
+  const branches = rule.split(/\s+or\s+/i).map(branch => branch.split(",").map(part => part.trim()).filter(Boolean));
+  const evaluated = branches.map(branch => {
+    const checks = branch.map(expression => {
+      const match = expression.match(/^(GT|GM|EL|CL|MM|SC|CO|FA|OF|ST)\s*>=\s*(\d+)$/i);
+      if (!match) return {pass: false, unknown: true, expression};
+      const key = match[1].toUpperCase();
+      const required = Number(match[2]);
+      const actual = scores[key];
+      return {pass: actual >= required, key, required, actual, gap: Math.max(0, required - actual), expression};
+    });
+    return {pass: checks.every(check => check.pass), unknown: checks.some(check => check.unknown), checks, gap: Math.max(...checks.map(check => check.gap || 0), 0)};
+  });
+  const passed = evaluated.find(branch => branch.pass);
+  if (passed) return {status: "pass", summary: `Meets ${rule}`, required: rule, actual: summarizeActual(passed.checks), gap: 0};
+  if (evaluated.some(branch => branch.unknown)) return {status: "unknown", summary: `Rule needs review: ${rule}`, required: rule};
+
+  const closest = [...evaluated].sort((a, b) => a.gap - b.gap)[0];
+  const failedChecks = closest.checks.filter(check => !check.pass);
+  const waiverCap = /3\s*pt/i.test(title) ? 3 : 5;
+  const waiverPossible = waiverRequested && failedChecks.length > 0 && failedChecks.every(check => check.key !== "GT" && check.gap <= waiverCap);
+  if (waiverPossible) return {status: "waiver", summary: `Within a modeled non-GT waiver scenario; approval is not guaranteed`, required: rule, actual: summarizeActual(closest.checks), gap: closest.gap};
+  return {status: "fail", summary: `Does not yet meet ${rule}`, required: rule, actual: summarizeActual(closest.checks), gap: closest.gap};
+}
+
+function summarizeActual(checks) {
+  return checks.filter(check => check.key).map(check => `${check.key} ${check.actual}`).join(", ");
+}
+
+function evaluatePulhes(rawRule, actual) {
+  const rule = String(rawRule || "");
+  const required = {};
+  for (const match of rule.matchAll(/([PULHES])\s*=\s*([1-4])/gi)) required[match[1].toUpperCase()] = Number(match[2]);
+  if (Object.keys(required).length !== 6) return {status: "unknown", summary: "PULHES rule needs source review", required: rule};
+  const unknown = Object.keys(required).some(key => actual[key] == null);
+  if (unknown) return {status: "unknown", summary: "Official PULHES not yet available", required: formatPulhes(required), actual: formatPulhes(actual)};
+  const failures = Object.keys(required).filter(key => actual[key] > required[key]);
+  return failures.length
+    ? {status: "fail", summary: `Profile exceeds the workbook maximum for ${failures.join(", ")}`, required: formatPulhes(required), actual: formatPulhes(actual)}
+    : {status: "pass", summary: "Profile meets the workbook maximums", required: formatPulhes(required), actual: formatPulhes(actual)};
+}
+
+function formatPulhes(values) {
+  return Object.keys(PULHES).map(key => values[key] == null ? "?" : values[key]).join("");
+}
+
+function evaluateVision(rawRule, actual) {
+  const rule = String(rawRule || "").toLowerCase();
+  if (actual === "unknown") return {status: "unknown", summary: "Color-vision status is unknown", required: rawRule};
+  let pass = false;
+  if (rule.includes("red") && rule.includes("green")) pass = actual === "normal" || actual === "red_green";
+  else if (rule.includes("normal") || rule.includes("no color")) pass = actual === "normal";
+  else return {status: "unknown", summary: "Vision rule needs source review", required: rawRule};
+  return {status: pass ? "pass" : "fail", summary: pass ? "Color-vision response meets the modeled rule" : "Color-vision response does not meet the modeled rule", required: rawRule, actual: actual.replaceAll("_", " ")};
+}
+
+function evaluateAdministrative(formula, actual, kind, ignoreFailure = false) {
+  if (!formula || !String(formula).startsWith("=")) return {kind, status: "not_applicable", summary: "No workbook check"};
+  const normalized = String(formula).toUpperCase();
+  const acceptsYes = normalized.includes('="YES"');
+  const acceptsNo = normalized.includes('="NO"');
+  if (actual === "unknown") return {kind, status: "unknown", summary: `${kind} needs recruiter review`};
+  if (acceptsYes && acceptsNo) return {kind, status: "pass", summary: `${kind} response recorded`};
+  const required = acceptsYes ? "yes" : acceptsNo ? "no" : null;
+  if (!required) return {kind, status: "unknown", summary: `${kind} formula needs source review`};
+  const pass = actual === required;
+  if (ignoreFailure && !pass) return {kind, status: "not_applicable", summary: "Waiver scenario handled with line-score rule"};
+  return {kind, status: pass ? "pass" : "fail", summary: pass ? `${kind} condition met` : `${kind} requires “${required}” in the workbook`, required, actual};
+}
+
+function resultSort(a, b) {
+  const eligibilityOrder = {eligible: 0, waiver: 1, review: 2, ineligible: 3};
+  const availabilityOrder = {current_public_posting: 0, idaho_catalog_listed_no_current_posting_seen: 1, idaho_availability_not_publicly_verified: 2};
+  return eligibilityOrder[a.eligibility.status] - eligibilityOrder[b.eligibility.status]
+    || availabilityOrder[a.idaho_availability.status] - availabilityOrder[b.idaho_availability.status]
+    || a.mos.localeCompare(b.mos);
+}
+
+function renderResults() {
+  if (!state.evaluation.length) {
+    $("#results-list").innerHTML = `<div class="empty-state"><h2>No evaluation yet</h2><p>Enter your information to generate explained results.</p></div>`;
+    return;
+  }
+  const counts = state.evaluation.reduce((acc, item) => (acc[item.eligibility.status]++, acc), {eligible:0,waiver:0,review:0,ineligible:0});
+  $("#result-summary").textContent = `${counts.eligible} eligible · ${counts.waiver} waiver scenarios · ${counts.review} need review · ${counts.ineligible} not eligible yet`;
+  const query = $("#result-search").value.trim().toLowerCase();
+  const category = $("#result-category").value;
+  const status = $("#result-status").value;
+  const filtered = state.evaluation.filter(record => matchesQuery(record, query) && (category === "all" || record.category === category) && (status === "all" || record.eligibility.status === status));
+  renderGrouped(filtered, $("#results-list"), true);
+}
+
+function renderCareers() {
+  if (!state.catalog.length) return;
+  const query = $("#career-search").value.trim().toLowerCase();
+  const category = $("#career-category").value;
+  const availability = $("#career-availability").value;
+  const filtered = state.catalog.filter(record => matchesQuery(record, query) && (category === "all" || record.category === category) && matchesAvailability(record, availability));
+  $("#career-count").textContent = `${filtered.length} of ${state.catalog.length} pathways shown`;
+  $("#career-list").innerHTML = filtered.length ? filtered.map(record => mosCard(record)).join("") : emptyState("No careers match those filters.");
+}
+
+function renderGrouped(records, target, withEligibility) {
+  if (!records.length) { target.innerHTML = emptyState("No MOSs match those filters."); return; }
+  const groups = records.reduce((map, record) => {
+    if (!map.has(record.category)) map.set(record.category, []);
+    map.get(record.category).push(record);
+    return map;
+  }, new Map());
+  target.innerHTML = [...groups.entries()].map(([category, items]) => `<section class="category-section"><h2>${escapeHtml(category)} <small>(${items.length})</small></h2><div class="card-grid">${items.map(record => mosCard(record, withEligibility)).join("")}</div></section>`).join("");
+}
+
+function matchesQuery(record, query) {
+  return !query || [record.mos, record.title, record.description, record.category, record.subcategory].join(" ").toLowerCase().includes(query);
+}
+
+function matchesAvailability(record, filter) {
+  const availability = record.idaho_availability;
+  if (filter === "current") return availability.current_public_posting_seen;
+  if (filter === "catalog") return availability.catalog_listed && !availability.current_public_posting_seen;
+  if (filter === "unverified") return !availability.catalog_listed && !availability.current_public_posting_seen;
+  return true;
+}
+
+function mosCard(record, withEligibility = false) {
+  const saved = state.saved.has(record.mos);
+  const resultBadge = withEligibility ? eligibilityBadge(record.eligibility.status) : availabilityBadge(record);
+  return `<article class="mos-card">
+    <div class="mos-title-row"><span class="mos-code">${escapeHtml(record.mos)}</span>${resultBadge}</div>
+    <h3>${escapeHtml(record.title)}</h3>
+    <p>${escapeHtml(record.description)}</p>
+    <div class="mos-card-footer"><button class="link-button" type="button" data-detail="${escapeHtml(record.mos)}">View details</button><button class="save-button" type="button" data-save="${escapeHtml(record.mos)}" aria-label="${saved ? "Remove" : "Save"} ${escapeHtml(record.mos)}" aria-pressed="${saved}">${saved ? "★" : "☆"}</button></div>
+  </article>`;
+}
+
+function eligibilityBadge(status) {
+  const labels = {eligible:"Eligible",waiver:"Waiver scenario",review:"Needs review",ineligible:"Not eligible yet"};
+  return `<span class="status-badge status-${status}">${labels[status]}</span>`;
+}
+
+function availabilityBadge(record) {
+  const availability = record.idaho_availability;
+  if (availability.current_public_posting_seen) return `<span class="status-badge status-current">Posting seen</span>`;
+  if (availability.catalog_listed) return `<span class="status-badge status-catalog">Idaho catalog</span>`;
+  return `<span class="status-badge status-unverified">Unverified</span>`;
+}
+
+function availabilityText(record) {
+  const availability = record.idaho_availability;
+  if (availability.current_public_posting_seen) return `Public Idaho posting seen as of ${availability.as_of}. Recruiter confirmation required.`;
+  if (availability.catalog_listed) return `Listed in Idaho’s public career catalog; no current posting was seen as of ${availability.as_of}. Recruiter confirmation required.`;
+  return `Idaho availability was not publicly verified as of ${availability.as_of}. Ask about related ${record.subcategory} opportunities.`;
+}
+
+function handleDelegatedClick(event) {
+  const detail = event.target.closest("[data-detail]");
+  if (detail) openDetail(detail.dataset.detail);
+  const save = event.target.closest("[data-save]");
+  if (save) toggleSaved(save.dataset.save);
+}
+
+function openDetail(mos, refreshOnly = false) {
+  const record = (state.evaluation.find(item => item.mos === mos) || state.catalog.find(item => item.mos === mos));
+  if (!record) return;
+  const criteria = record.eligibility?.criteria || [];
+  $("#dialog-content").innerHTML = `<div class="detail-title"><p class="eyebrow">${escapeHtml(record.category)} · ${escapeHtml(record.subcategory)}</p><h2 id="dialog-title">${escapeHtml(record.mos)} ${escapeHtml(record.title)}</h2></div>
+    <div class="detail-meta">${record.eligibility ? eligibilityBadge(record.eligibility.status) : ""}${availabilityBadge(record)}</div>
+    <p>${escapeHtml(record.description)}</p>
+    <section class="detail-section"><h3>Idaho status</h3><p>${escapeHtml(availabilityText(record))}</p></section>
+    ${criteria.length ? `<section class="detail-section"><h3>Why this result</h3><ul class="criteria-list">${criteria.filter(c => c.status !== "not_applicable").map(c => `<li class="${c.status === "fail" ? "fail" : c.status === "unknown" ? "unknown" : ""}"><strong>${escapeHtml(c.kind)}:</strong> ${escapeHtml(c.summary)}</li>`).join("")}</ul></section>` : ""}
+    <section class="detail-section"><h3>Workbook requirements</h3><ul class="criteria-list"><li><strong>Line score:</strong> ${escapeHtml(record.requirements.line_score_text)}</li><li><strong>PULHES:</strong> ${escapeHtml(record.requirements.pulhes_text)}</li><li><strong>Vision:</strong> ${escapeHtml(record.requirements.vision_text)}</li><li><strong>Physical demand:</strong> ${escapeHtml(record.requirements.physical_demand || "Not listed")}</li><li><strong>AIT:</strong> ${escapeHtml(record.training.ait_length_text || "Confirm with recruiter")}</li></ul></section>
+    <section class="detail-section"><h3>Next step</h3><div class="actions">${record.video_url ? `<a class="button secondary" href="${escapeHtml(record.video_url)}" target="_blank" rel="noopener">Watch MOS video</a>` : ""}<button class="button primary" type="button" data-save="${escapeHtml(record.mos)}">${state.saved.has(record.mos) ? "Remove from saved" : "Save this MOS"}</button></div><p class="source-note">Qualification estimate only. Final MOS eligibility and vacancy availability require official review.</p></section>`;
+  if (!refreshOnly) $("#mos-dialog").showModal();
+}
+
+function toggleSaved(mos) {
+  if (state.saved.has(mos)) state.saved.delete(mos); else state.saved.add(mos);
+  localStorage.setItem("idahoMosSaved", JSON.stringify([...state.saved]));
+  renderCareers();
+  if (state.evaluation.length) renderResults();
+  renderSaved();
+  if ($("#mos-dialog").open) openDetail(mos, true);
+}
+
+function renderSaved() {
+  const records = state.catalog.filter(record => state.saved.has(record.mos));
+  $("#saved-list").innerHTML = records.length ? records.map(record => mosCard(record)).join("") : emptyState("No MOSs saved yet. Browse careers or save from your results.");
+}
+
+function emptyState(message) {
+  return `<div class="empty-state"><h2>Nothing to show</h2><p>${escapeHtml(message)}</p></div>`;
+}
+
+init();
