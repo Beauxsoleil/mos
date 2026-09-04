@@ -24,6 +24,7 @@ button, input, select { font: inherit; }
 button, select, input { min-height: 44px; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 [hidden] { display: none !important; }
+.sr-only { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
 
 .skip-link { position: fixed; left: 16px; top: -80px; z-index: 100; background: #fff; padding: 12px 18px; border-radius: 8px; }
 .skip-link:focus { top: 12px; }
@@ -88,6 +89,7 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--da
 .error-summary ul { margin: 6px 0 0; }
 
 .freshness-banner { margin: -10px 0 24px; padding: 14px 17px; border-left: 5px solid var(--warning); border-radius: 8px; background: #fff7df; }
+.results-guide { margin: -10px 0 24px; padding: 14px 17px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
 .filters { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 14px; margin: 0 0 24px; padding: 18px; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,.6); }
 .count-line { color: var(--muted); font-weight: 700; }
 .catalog-sections { display: grid; gap: 28px; }
@@ -99,6 +101,14 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--da
 .mos-code { flex: 0 0 auto; padding: 3px 8px; border-radius: 8px; background: var(--forest); color: white; font-weight: 900; }
 .mos-card h3 { margin: 10px 0 7px; }
 .mos-card p { margin: 0 0 12px; color: var(--muted); }
+.eligibility-note { margin: 4px 0 14px; padding: 14px; border-left: 4px solid var(--warning); border-radius: 10px; background: #fff8e6; }
+.eligibility-note.status-panel-ineligible { border-left-color: var(--danger); background: #fff0ee; }
+.eligibility-note.status-panel-waiver { border-left-color: #675092; background: #f1edf9; }
+.eligibility-note > strong { display: block; margin-bottom: 7px; color: var(--ink); }
+.eligibility-note ul { display: grid; gap: 9px; margin: 0; padding-left: 19px; }
+.eligibility-note li { color: var(--ink); }
+.eligibility-note li small, .next-step-panel li small { display: block; margin-top: 3px; color: var(--muted); font-size: 13px; line-height: 1.4; }
+.more-reasons { margin: 9px 0 0 !important; color: var(--ink) !important; font-size: 13px; font-weight: 750; }
 .mos-card-footer { display: flex; gap: 8px; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 10px; }
 .link-button, .save-button { min-height: 44px; border: 0; background: transparent; color: var(--forest-2); cursor: pointer; font-weight: 800; }
 .save-button { width: 44px; padding: 0; border: 1px solid var(--line); border-radius: 50%; font-size: 23px; }
@@ -127,9 +137,24 @@ dialog::backdrop { background: rgba(11,20,15,.66); backdrop-filter: blur(3px); }
 .criteria-list li { padding: 11px 13px; border-radius: 10px; background: var(--sage); }
 .criteria-list li.fail { background: #fff0ee; }
 .criteria-list li.unknown { background: #fff7df; }
+.next-step-panel { padding: 20px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.4); }
 .source-note { font-size: 13px; color: var(--muted); }
 .mobile-nav { display: none; }
 .noscript { margin: 20px; padding: 18px; background: #fff0ee; }
+.site-footer { display: flex; justify-content: space-between; gap: 36px; padding: 28px clamp(18px, 5vw, 72px) 100px; border-top: 1px solid var(--line); background: var(--paper); }
+.site-footer p { max-width: 520px; margin: 6px 0 0; color: var(--muted); }
+.site-footer nav { display: flex; flex-wrap: wrap; align-content: flex-start; justify-content: flex-end; gap: 10px 18px; }
+.site-footer nav a { min-height: 44px; display: inline-flex; align-items: center; font-weight: 700; }
+.article-page { max-width: 880px; }
+.breadcrumbs { display: flex; gap: 10px; margin-bottom: 34px; color: var(--muted); font-size: 14px; }
+.article-page article > section { margin-top: 38px; }
+.article-page article > section p { max-width: 760px; }
+.definition-list { display: grid; gap: 12px; }
+.definition-list div { padding: 17px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+.definition-list dt { font-weight: 850; }
+.definition-list dd { margin: 4px 0 0; color: var(--muted); }
+.not-found-page { min-height: 70vh; display: grid; align-content: center; justify-items: start; }
+.not-found-code { margin-bottom: -20px; color: var(--sage); font-size: clamp(110px, 25vw, 250px); font-weight: 950; letter-spacing: -.09em; line-height: .8; }
 
 @media (max-width: 900px) {
   .score-grid { grid-template-columns: repeat(3, 1fr); }
@@ -151,6 +176,8 @@ dialog::backdrop { background: rgba(11,20,15,.66); backdrop-filter: blur(3px); }
   .pulhes-grid { grid-template-columns: repeat(2, 1fr); }
   .card-grid { grid-template-columns: 1fr; }
   .form-actions .button { width: 100%; }
+  .site-footer { display: block; padding-bottom: 110px; }
+  .site-footer nav { justify-content: flex-start; margin-top: 18px; }
   .mobile-nav { position: fixed; inset: auto 0 0; z-index: 30; display: grid; grid-template-columns: repeat(5, 1fr); padding: 7px 4px max(7px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: rgba(255,254,250,.97); box-shadow: 0 -10px 30px rgba(29,40,34,.08); }
   .mobile-nav a { display: grid; place-items: center; min-height: 52px; color: var(--muted); text-decoration: none; font-size: 11px; font-weight: 750; }
   .mobile-nav a span { font-size: 20px; line-height: 1; }
@@ -177,4 +204,7 @@ dialog::backdrop { background: rgba(11,20,15,.66); backdrop-filter: blur(3px); }
   .status-unverified, .status-ineligible { background: #38413b; color: #e3e8e4; }
   .criteria-list li.fail { background: #4b2522; }
   .criteria-list li.unknown { background: #453716; }
+  .eligibility-note, .eligibility-note.status-panel-ineligible, .eligibility-note.status-panel-waiver { background: #302a20; }
+  .eligibility-note.status-panel-ineligible { background: #402523; }
+  .eligibility-note.status-panel-waiver { background: #2f2940; }
 }

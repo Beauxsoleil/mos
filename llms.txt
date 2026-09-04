@@ -1,0 +1,15 @@
+# Idaho MOS Pathfinder
+
+> A static counseling aid for exploring Idaho Army National Guard Military Occupational Specialty pathways.
+
+## Main pages
+
+- [Application](https://beauxsoleil.github.io/mos/): Eligibility calculator, career catalog, saved MOSs, and recruiter pathway.
+- [How results work](https://beauxsoleil.github.io/mos/methodology.html): Sources, interpretation rules, privacy, and limitations.
+- [Source repository](https://github.com/Beauxsoleil/mos): Public page source and data documentation.
+
+## Important limitations
+
+- Qualification rules are modeled from the April 2025 DA PAM 611-21 Table 10-6 MOS and Line Score Wizard workbook.
+- Public Idaho availability evidence is dated September 4, 2026 and does not reserve or guarantee a vacancy.
+- MEPS, current Army policy, security adjudication, medical qualification, authorized vacancy systems, and recruiter review control final eligibility.

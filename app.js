@@ -10,11 +10,21 @@ const PULHES = {
   S: "Psychiatric",
 };
 
+function readSavedMos() {
+  try {
+    const stored = JSON.parse(localStorage.getItem("idahoMosSaved") || "[]");
+    return new Set(Array.isArray(stored) ? stored.filter(value => typeof value === "string") : []);
+  } catch {
+    return new Set();
+  }
+}
+
 const state = {
   catalog: [],
   categories: [],
   evaluation: [],
-  saved: new Set(JSON.parse(localStorage.getItem("idahoMosSaved") || "[]")),
+  catalogPromise: null,
+  saved: readSavedMos(),
 };
 
 const $ = (selector, scope = document) => scope.querySelector(selector);
@@ -24,6 +34,13 @@ const escapeHtml = (value = "") => String(value).replace(/[&<>'"]/g, char => ({"
 async function init() {
   buildFormFields();
   bindEvents();
+  route();
+}
+
+async function ensureCatalog() {
+  if (state.catalog.length) return state.catalog;
+  if (state.catalogPromise) return state.catalogPromise;
+  state.catalogPromise = (async () => {
   try {
     const response = await fetch("./data/mos.json");
     if (!response.ok) throw new Error(`Catalog request failed: ${response.status}`);
@@ -33,11 +50,15 @@ async function init() {
     populateCategoryFilters();
     renderCareers();
     renderSaved();
+    return state.catalog;
   } catch (error) {
     console.error(error);
     $("#career-list").innerHTML = `<div class="empty-state"><h2>Catalog unavailable</h2><p>Reload the page or open the raw MOS catalog from the repository.</p></div>`;
+    announce("The MOS catalog could not be loaded.");
+    throw error;
   }
-  route();
+  })();
+  return state.catalogPromise;
 }
 
 function buildFormFields() {
@@ -73,7 +94,7 @@ function bindEvents() {
   });
 }
 
-function route() {
+async function route() {
   const routeName = location.hash.replace("#", "") || "home";
   const allowed = ["home", "eligibility", "results", "careers", "saved", "recruiter"];
   const target = allowed.includes(routeName) ? routeName : "home";
@@ -82,9 +103,13 @@ function route() {
     const active = link.dataset.route === target || (target === "results" && link.dataset.route === "eligibility");
     if (active) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current");
   });
+  if (["eligibility", "results", "careers", "saved"].includes(target)) {
+    try { await ensureCatalog(); } catch { /* The page already shows a useful error. */ }
+  }
+  if (target === "careers") renderCareers();
   if (target === "saved") renderSaved();
   $("#main").focus({preventScroll: true});
-  window.scrollTo({top: 0, behavior: "instant"});
+  window.scrollTo({top: 0, behavior: "auto"});
 }
 
 function navigate(view) {
@@ -98,7 +123,7 @@ function populateCategoryFilters() {
   }
 }
 
-function handleEvaluation(event) {
+async function handleEvaluation(event) {
   event.preventDefault();
   clearValidationErrors();
   const form = new FormData(event.currentTarget);
@@ -128,9 +153,11 @@ function handleEvaluation(event) {
     return;
   }
 
+  try { await ensureCatalog(); } catch { return; }
   state.evaluation = state.catalog.map(record => evaluateMos(record, input)).sort(resultSort);
   renderResults();
   navigate("results");
+  announce(`${state.evaluation.filter(record => record.eligibility.status === "eligible").length} MOS options meet all modeled requirements.`);
 }
 
 function fieldLabel(field) {
@@ -156,6 +183,7 @@ function showValidationErrors(errors) {
     }
   });
   summary.focus();
+  announce(`${errors.length} required field${errors.length === 1 ? " needs" : "s need"} attention.`);
 }
 
 function clearForm() {
@@ -204,15 +232,15 @@ function evaluateLineRule(rawRule, scores, waiverRequested, title) {
     return {pass: checks.every(check => check.pass), unknown: checks.some(check => check.unknown), checks, gap: Math.max(...checks.map(check => check.gap || 0), 0)};
   });
   const passed = evaluated.find(branch => branch.pass);
-  if (passed) return {status: "pass", summary: `Meets ${rule}`, required: rule, actual: summarizeActual(passed.checks), gap: 0};
+  if (passed) return {status: "pass", summary: `Meets ${rule}`, required: rule, actual: summarizeActual(passed.checks), gap: 0, checks: passed.checks};
   if (evaluated.some(branch => branch.unknown)) return {status: "unknown", summary: `Rule needs review: ${rule}`, required: rule};
 
   const closest = [...evaluated].sort((a, b) => a.gap - b.gap)[0];
   const failedChecks = closest.checks.filter(check => !check.pass);
   const waiverCap = /3\s*pt/i.test(title) ? 3 : 5;
   const waiverPossible = waiverRequested && failedChecks.length > 0 && failedChecks.every(check => check.key !== "GT" && check.gap <= waiverCap);
-  if (waiverPossible) return {status: "waiver", summary: `Within a modeled non-GT waiver scenario; approval is not guaranteed`, required: rule, actual: summarizeActual(closest.checks), gap: closest.gap};
-  return {status: "fail", summary: `Does not yet meet ${rule}`, required: rule, actual: summarizeActual(closest.checks), gap: closest.gap};
+  if (waiverPossible) return {status: "waiver", summary: `Within a modeled non-GT waiver scenario; approval is not guaranteed`, required: rule, actual: summarizeActual(closest.checks), gap: closest.gap, checks: closest.checks};
+  return {status: "fail", summary: `Does not yet meet ${rule}`, required: rule, actual: summarizeActual(closest.checks), gap: closest.gap, checks: closest.checks};
 }
 
 function summarizeActual(checks) {
@@ -228,7 +256,7 @@ function evaluatePulhes(rawRule, actual) {
   if (unknown) return {status: "unknown", summary: "Official PULHES not yet available", required: formatPulhes(required), actual: formatPulhes(actual)};
   const failures = Object.keys(required).filter(key => actual[key] > required[key]);
   return failures.length
-    ? {status: "fail", summary: `Profile exceeds the workbook maximum for ${failures.join(", ")}`, required: formatPulhes(required), actual: formatPulhes(actual)}
+    ? {status: "fail", summary: `Profile exceeds the workbook maximum for ${failures.join(", ")}`, required: formatPulhes(required), actual: formatPulhes(actual), requiredValues: required, actualValues: actual, failures}
     : {status: "pass", summary: "Profile meets the workbook maximums", required: formatPulhes(required), actual: formatPulhes(actual)};
 }
 
@@ -321,8 +349,46 @@ function mosCard(record, withEligibility = false) {
     <div class="mos-title-row"><span class="mos-code">${escapeHtml(record.mos)}</span>${resultBadge}</div>
     <h3>${escapeHtml(record.title)}</h3>
     <p>${escapeHtml(record.description)}</p>
+    ${withEligibility ? eligibilityExplanation(record) : ""}
     <div class="mos-card-footer"><button class="link-button" type="button" data-detail="${escapeHtml(record.mos)}">View details</button><button class="save-button" type="button" data-save="${escapeHtml(record.mos)}" aria-label="${saved ? "Remove" : "Save"} ${escapeHtml(record.mos)}" aria-pressed="${saved}">${saved ? "★" : "☆"}</button></div>
   </article>`;
+}
+
+function eligibilityExplanation(record) {
+  const status = record.eligibility?.status;
+  if (!status || status === "eligible") return "";
+  const blockers = record.eligibility.criteria.filter(criterion => criterion.status === "fail" || criterion.status === "unknown" || criterion.status === "waiver");
+  const heading = status === "ineligible" ? "Why you’re not eligible yet" : status === "review" ? "What still needs review" : "Why this is a waiver scenario";
+  const items = blockers.slice(0, 2).map(criterion => `<li><span>${escapeHtml(explainCriterion(criterion))}</span><small>${escapeHtml(nextStepFor(criterion))}</small></li>`).join("");
+  const remaining = blockers.length - 2;
+  return `<div class="eligibility-note status-panel-${escapeHtml(status)}"><strong>${heading}</strong><ul>${items}</ul>${remaining > 0 ? `<p class="more-reasons">+${remaining} more requirement${remaining === 1 ? "" : "s"} in details</p>` : ""}</div>`;
+}
+
+function explainCriterion(criterion) {
+  if (criterion.kind === "Line score" && criterion.status === "fail") {
+    const gaps = (criterion.checks || []).filter(check => check.key && !check.pass).map(check => `${check.key} is ${check.actual}; ${check.required} is required (${check.gap} point${check.gap === 1 ? "" : "s"} short)`);
+    return gaps.length ? gaps.join("; ") : criterion.summary;
+  }
+  if (criterion.kind === "Line score" && criterion.status === "waiver") return `${criterion.actual}; modeled within the workbook’s non-GT waiver range`;
+  if (criterion.kind === "PULHES" && criterion.failures?.length) {
+    return criterion.failures.map(key => `${key} is ${criterion.actualValues[key]}; maximum ${criterion.requiredValues[key]}`).join("; ");
+  }
+  if (criterion.kind === "Citizenship" && criterion.status === "fail") return "The workbook requires U.S. citizenship for this MOS.";
+  if (criterion.kind === "Driver’s license" && criterion.status === "fail") return "The workbook requires a valid driver’s license for this MOS.";
+  if (criterion.kind === "Split Training Option" && criterion.status === "fail") return "This MOS is not modeled as available through the Split Training Option.";
+  if (criterion.kind === "Clearance screening" && criterion.status === "fail") return "The clearance screening response does not meet this MOS requirement.";
+  return criterion.summary;
+}
+
+function nextStepFor(criterion) {
+  if (criterion.kind === "Line score") return criterion.status === "waiver" ? "Ask a recruiter whether a line-score waiver can be submitted; approval is not guaranteed." : "Focus study on the listed line-score area, then ask about retesting and score-improvement options.";
+  if (criterion.kind === "PULHES") return "Ask a recruiter or MEPS counselor to verify the official profile and MOS medical standard.";
+  if (criterion.kind === "Color vision") return "Confirm the official color-vision result and ask about MOSs with a compatible standard.";
+  if (criterion.kind === "Driver’s license") return "Obtain or verify a valid license, or compare MOSs without this workbook requirement.";
+  if (criterion.kind === "Citizenship") return "Ask a recruiter which MOSs are open for your current citizenship status.";
+  if (criterion.kind === "Split Training Option") return "Compare MOSs compatible with your training timeline or discuss another ship plan.";
+  if (criterion.kind === "Clearance screening") return "Have a recruiter review the issue; only the official process can determine clearance eligibility.";
+  return "Have a recruiter verify this requirement before choosing an MOS.";
 }
 
 function eligibilityBadge(status) {
@@ -344,6 +410,13 @@ function availabilityText(record) {
   return `Idaho availability was not publicly verified as of ${availability.as_of}. Ask about related ${record.subcategory} opportunities.`;
 }
 
+function safeHttpUrl(value) {
+  try {
+    const url = new URL(value);
+    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+  } catch { return ""; }
+}
+
 function handleDelegatedClick(event) {
   const detail = event.target.closest("[data-detail]");
   if (detail) openDetail(detail.dataset.detail);
@@ -355,23 +428,26 @@ function openDetail(mos, refreshOnly = false) {
   const record = (state.evaluation.find(item => item.mos === mos) || state.catalog.find(item => item.mos === mos));
   if (!record) return;
   const criteria = record.eligibility?.criteria || [];
+  const videoUrl = safeHttpUrl(record.video_url);
   $("#dialog-content").innerHTML = `<div class="detail-title"><p class="eyebrow">${escapeHtml(record.category)} · ${escapeHtml(record.subcategory)}</p><h2 id="dialog-title">${escapeHtml(record.mos)} ${escapeHtml(record.title)}</h2></div>
     <div class="detail-meta">${record.eligibility ? eligibilityBadge(record.eligibility.status) : ""}${availabilityBadge(record)}</div>
     <p>${escapeHtml(record.description)}</p>
     <section class="detail-section"><h3>Idaho status</h3><p>${escapeHtml(availabilityText(record))}</p></section>
     ${criteria.length ? `<section class="detail-section"><h3>Why this result</h3><ul class="criteria-list">${criteria.filter(c => c.status !== "not_applicable").map(c => `<li class="${c.status === "fail" ? "fail" : c.status === "unknown" ? "unknown" : ""}"><strong>${escapeHtml(c.kind)}:</strong> ${escapeHtml(c.summary)}</li>`).join("")}</ul></section>` : ""}
     <section class="detail-section"><h3>Workbook requirements</h3><ul class="criteria-list"><li><strong>Line score:</strong> ${escapeHtml(record.requirements.line_score_text)}</li><li><strong>PULHES:</strong> ${escapeHtml(record.requirements.pulhes_text)}</li><li><strong>Vision:</strong> ${escapeHtml(record.requirements.vision_text)}</li><li><strong>Physical demand:</strong> ${escapeHtml(record.requirements.physical_demand || "Not listed")}</li><li><strong>AIT:</strong> ${escapeHtml(record.training.ait_length_text || "Confirm with recruiter")}</li></ul></section>
-    <section class="detail-section"><h3>Next step</h3><div class="actions">${record.video_url ? `<a class="button secondary" href="${escapeHtml(record.video_url)}" target="_blank" rel="noopener">Watch MOS video</a>` : ""}<button class="button primary" type="button" data-save="${escapeHtml(record.mos)}">${state.saved.has(record.mos) ? "Remove from saved" : "Save this MOS"}</button></div><p class="source-note">Qualification estimate only. Final MOS eligibility and vacancy availability require official review.</p></section>`;
+    ${record.eligibility && record.eligibility.status !== "eligible" ? `<section class="detail-section next-step-panel"><h3>Your path forward</h3><ul class="criteria-list">${record.eligibility.criteria.filter(c => ["fail", "unknown", "waiver"].includes(c.status)).map(c => `<li><strong>${escapeHtml(c.kind)}:</strong> ${escapeHtml(explainCriterion(c))}<small>${escapeHtml(nextStepFor(c))}</small></li>`).join("")}</ul></section>` : ""}
+    <section class="detail-section"><h3>Next step</h3><div class="actions">${videoUrl ? `<a class="button secondary" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener">Watch MOS video</a>` : ""}<button class="button primary" type="button" data-save="${escapeHtml(record.mos)}">${state.saved.has(record.mos) ? "Remove from saved" : "Save this MOS"}</button></div><p class="source-note">Qualification estimate only. Final MOS eligibility and vacancy availability require official review.</p></section>`;
   if (!refreshOnly) $("#mos-dialog").showModal();
 }
 
 function toggleSaved(mos) {
   if (state.saved.has(mos)) state.saved.delete(mos); else state.saved.add(mos);
-  localStorage.setItem("idahoMosSaved", JSON.stringify([...state.saved]));
+  try { localStorage.setItem("idahoMosSaved", JSON.stringify([...state.saved])); } catch { announce("Saved MOSs are unavailable in this browser mode."); }
   renderCareers();
   if (state.evaluation.length) renderResults();
   renderSaved();
   if ($("#mos-dialog").open) openDetail(mos, true);
+  announce(`${mos} ${state.saved.has(mos) ? "saved" : "removed from saved MOSs"}.`);
 }
 
 function renderSaved() {
@@ -381,6 +457,13 @@ function renderSaved() {
 
 function emptyState(message) {
   return `<div class="empty-state"><h2>Nothing to show</h2><p>${escapeHtml(message)}</p></div>`;
+}
+
+function announce(message) {
+  const region = $("#status-message");
+  if (!region) return;
+  region.textContent = "";
+  window.setTimeout(() => { region.textContent = message; }, 20);
 }
 
 init();

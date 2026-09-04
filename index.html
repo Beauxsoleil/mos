@@ -5,8 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#24362d">
   <meta name="description" content="Explore Idaho Army National Guard MOS pathways and estimate eligibility from line scores and screening information.">
-  <title>Idaho MOS Pathfinder</title>
+  <meta name="robots" content="index,follow">
+  <link rel="canonical" href="https://beauxsoleil.github.io/mos/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Idaho MOS Pathfinder">
+  <meta property="og:title" content="Idaho MOS Pathfinder | Explore Guard Careers">
+  <meta property="og:description" content="Compare your Army line scores with 152 MOS pathways and see clear next steps for Idaho Army National Guard careers.">
+  <meta property="og:url" content="https://beauxsoleil.github.io/mos/">
+  <meta property="og:image" content="https://beauxsoleil.github.io/mos/social-card.jpg">
+  <meta property="og:image:alt" content="Idaho MOS Pathfinder career eligibility explorer">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Idaho MOS Pathfinder | Explore Guard Careers">
+  <meta name="twitter:description" content="Compare your Army line scores with 152 MOS pathways and get clear next steps.">
+  <meta name="twitter:image" content="https://beauxsoleil.github.io/mos/social-card.jpg">
+  <title>Idaho MOS Pathfinder | Explore Guard Careers</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Idaho MOS Pathfinder",
+      "url": "https://beauxsoleil.github.io/mos/",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "Any",
+      "description": "A private, browser-based counseling aid for exploring Idaho Army National Guard MOS pathways.",
+      "isAccessibleForFree": true
+    }
+  </script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -76,12 +102,12 @@
           <legend><span>3</span> Screening information</legend>
           <p class="field-help">These answers screen workbook requirements; they do not grant a medical qualification or security clearance.</p>
           <div class="question-grid">
-            <label>Color vision<select name="colorVision" required><option value="">Select</option><option value="normal">Normal</option><option value="red_green">Red/green only</option><option value="no_color">No color vision</option><option value="unknown">Unknown</option></select></label>
-            <label>U.S. citizenship<select name="citizenship" required><option value="">Select</option><option value="us_citizen">U.S. citizen</option><option value="non_citizen">Not a U.S. citizen</option><option value="unknown">Unknown</option></select></label>
-            <label>Driver’s license<select name="driversLicense" required><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option><option value="unknown">Unknown</option></select></label>
-            <label>Potentially clearance eligible<select name="clearanceEligible" required><option value="">Select</option><option value="yes">Yes / no known issue</option><option value="no">No / known issue</option><option value="unknown">Unknown</option></select></label>
-            <label>Split Training Option applicant<select name="splitTrainingOption" required><option value="">Select</option><option value="no">No</option><option value="yes">Yes</option><option value="unknown">Unknown</option></select></label>
-            <label>Show line-score waiver scenarios<select name="lineScoreWaiverRequested" required><option value="">Select</option><option value="no">No</option><option value="yes">Yes</option></select></label>
+            <label>Color vision<select name="colorVision" required aria-describedby="error-colorVision"><option value="">Select</option><option value="normal">Normal</option><option value="red_green">Red/green only</option><option value="no_color">No color vision</option><option value="unknown">Unknown</option></select><span class="field-error" id="error-colorVision"></span></label>
+            <label>U.S. citizenship<select name="citizenship" required aria-describedby="error-citizenship"><option value="">Select</option><option value="us_citizen">U.S. citizen</option><option value="non_citizen">Not a U.S. citizen</option><option value="unknown">Unknown</option></select><span class="field-error" id="error-citizenship"></span></label>
+            <label>Driver’s license<select name="driversLicense" required aria-describedby="error-driversLicense"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option><option value="unknown">Unknown</option></select><span class="field-error" id="error-driversLicense"></span></label>
+            <label>Potentially clearance eligible<select name="clearanceEligible" required aria-describedby="error-clearanceEligible"><option value="">Select</option><option value="yes">Yes / no known issue</option><option value="no">No / known issue</option><option value="unknown">Unknown</option></select><span class="field-error" id="error-clearanceEligible"></span></label>
+            <label>Split Training Option applicant<select name="splitTrainingOption" required aria-describedby="error-splitTrainingOption"><option value="">Select</option><option value="no">No</option><option value="yes">Yes</option><option value="unknown">Unknown</option></select><span class="field-error" id="error-splitTrainingOption"></span></label>
+            <label>Show line-score waiver scenarios<select name="lineScoreWaiverRequested" required aria-describedby="error-lineScoreWaiverRequested"><option value="">Select</option><option value="no">No</option><option value="yes">Yes</option></select><span class="field-error" id="error-lineScoreWaiverRequested"></span></label>
           </div>
         </fieldset>
 
@@ -98,6 +124,7 @@
         <button class="button secondary compact" type="button" data-route-button="eligibility">Edit inputs</button>
       </div>
       <div class="freshness-banner"><strong>Availability is not a reservation.</strong> “Posting seen” and “Idaho catalog-listed” are time-stamped public evidence. A recruiter must confirm a current, contractable vacancy.</div>
+      <div class="results-guide"><strong>Not eligible yet?</strong> Each result names the requirement that is holding it back and gives a next step. Unknown information is never counted as a pass.</div>
       <div class="filters" aria-label="Result filters">
         <label>Search<input id="result-search" type="search" placeholder="MOS or job title"></label>
         <label>Category<select id="result-category"><option value="all">All categories</option></select></label>
@@ -131,6 +158,11 @@
     </section>
   </main>
 
+  <footer class="site-footer">
+    <div><strong>Idaho MOS Pathfinder</strong><p>A private counseling aid—not an official qualification or vacancy decision.</p></div>
+    <nav aria-label="Supporting information"><a href="#careers" data-route="careers">Career catalog</a><a href="#recruiter" data-route="recruiter">Recruiter contact</a><a href="./methodology.html">How results work</a><a href="https://github.com/Beauxsoleil/mos">Page source</a></nav>
+  </footer>
+
   <nav class="mobile-nav" aria-label="Mobile navigation">
     <a href="#home" data-route="home"><span aria-hidden="true">⌂</span>Home</a>
     <a href="#eligibility" data-route="eligibility"><span aria-hidden="true">✓</span>Eligibility</a>
@@ -145,6 +177,7 @@
   </dialog>
 
   <noscript><p class="noscript">JavaScript is required to run the eligibility calculator. The career source data remains available in <a href="./data/mos.json">the MOS catalog</a>.</p></noscript>
+  <div id="status-message" class="sr-only" role="status" aria-live="polite"></div>
   <script src="./app.js" defer></script>
 </body>
 </html>

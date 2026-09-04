@@ -7,8 +7,9 @@ A static, mobile-first GitHub Pages web app that explores Idaho Army National Gu
 - Evaluates ten Army line scores, PULHES, color vision, citizenship, driver’s-license status, clearance screening, Split Training Option status, and modeled waiver scenarios.
 - Organizes all 152 workbook records by MOS category.
 - Separates applicant eligibility from time-stamped Idaho availability evidence.
-- Shows exact requirement gaps, workbook criteria, training length, and videos where available.
+- Shows exact requirement gaps, plain-language reasons for every “not eligible yet” result, practical next steps, workbook criteria, training length, and videos where available.
 - Saves a shortlist locally without requiring an account or sending personal data.
+- Includes accessible validation, status announcements, a documented methodology, search metadata, a sitemap, and a custom 404 page.
 
 ## Run locally
 
@@ -19,6 +20,8 @@ python3 -m http.server 8080
 ```
 
 Then open `http://localhost:8080`.
+
+Run the static catalog and application checks with `node tests.mjs`.
 
 ## Important limitation
 
