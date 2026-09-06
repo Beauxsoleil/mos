@@ -61,7 +61,15 @@ function saveDraft(event) {
   }
 }
 
+let draftSaveTimer = null;
+let careerRenderTimer = null;
+let resultRenderTimer = null;
+
 function clearDraft() {
+  if (draftSaveTimer) {
+    clearTimeout(draftSaveTimer);
+    draftSaveTimer = null;
+  }
   try {
     localStorage.removeItem(STORAGE_DRAFT);
   } catch {
@@ -101,8 +109,12 @@ function updateFormCompletion() {
 }
 
 function handleFormInput() {
-  saveDraft();
   updateFormCompletion();
+  if (draftSaveTimer) clearTimeout(draftSaveTimer);
+  draftSaveTimer = setTimeout(() => {
+    draftSaveTimer = null;
+    saveDraft();
+  }, 300);
 }
 
 const state = {
@@ -136,8 +148,6 @@ async function ensureCatalog() {
     state.catalog = data.records;
     state.categories = [...new Set(state.catalog.map(record => record.category))].sort();
     populateCategoryFilters();
-    renderCareers();
-    renderSaved();
     return state.catalog;
   } catch (error) {
     console.error(error);
@@ -170,15 +180,19 @@ function bindEvents() {
   $("#eligibility-form").addEventListener("submit", handleEvaluation);
   $("#eligibility-form").addEventListener("input", handleFormInput);
   $("#clear-form").addEventListener("click", clearForm);
-  $("#side-evaluate").addEventListener("click", () => $("#eligibility-form").requestSubmit());
-  $("#career-search").addEventListener("input", renderCareers);
-  $("#career-category").addEventListener("change", renderCareers);
-  $("#career-availability").addEventListener("change", renderCareers);
-  $("#career-sort").addEventListener("change", renderCareers);
+  $("#side-evaluate").addEventListener("click", () => {
+    const form = $("#eligibility-form");
+    if (form.requestSubmit) form.requestSubmit();
+    else form.dispatchEvent(new Event("submit", {bubbles: true, cancelable: true}));
+  });
+  $("#career-search").addEventListener("input", scheduleCareersRender);
+  $("#career-category").addEventListener("change", scheduleCareersRender);
+  $("#career-availability").addEventListener("change", scheduleCareersRender);
+  $("#career-sort").addEventListener("change", scheduleCareersRender);
   $("#clear-career-filters").addEventListener("click", clearCareerFilters);
-  $("#result-search").addEventListener("input", renderResults);
-  $("#result-category").addEventListener("change", renderResults);
-  $("#result-status").addEventListener("change", renderResults);
+  $("#result-search").addEventListener("input", scheduleResultsRender);
+  $("#result-category").addEventListener("change", scheduleResultsRender);
+  $("#result-status").addEventListener("change", scheduleResultsRender);
   $("#clear-result-filters").addEventListener("click", clearResultFilters);
   document.addEventListener("click", handleDelegatedClick);
   $("#mos-dialog .dialog-close").addEventListener("click", () => $("#mos-dialog").close());
@@ -200,6 +214,7 @@ async function route() {
     try { await ensureCatalog(); } catch { /* The page already shows a useful error. */ }
   }
   if (target === "careers") renderCareers();
+  if (target === "results") renderResults();
   if (target === "saved") renderSaved();
   $("#main").focus({preventScroll: true});
   window.scrollTo({top: 0, behavior: "auto"});
@@ -390,7 +405,27 @@ function resultSort(a, b) {
     || a.mos.localeCompare(b.mos);
 }
 
+function scheduleResultsRender() {
+  if (resultRenderTimer) clearTimeout(resultRenderTimer);
+  resultRenderTimer = setTimeout(() => {
+    resultRenderTimer = null;
+    renderResults();
+  }, 100);
+}
+
+function scheduleCareersRender() {
+  if (careerRenderTimer) clearTimeout(careerRenderTimer);
+  careerRenderTimer = setTimeout(() => {
+    careerRenderTimer = null;
+    renderCareers();
+  }, 100);
+}
+
 function renderResults() {
+  if (resultRenderTimer) {
+    clearTimeout(resultRenderTimer);
+    resultRenderTimer = null;
+  }
   const empty = $("#results-list");
   const count = $("#result-count");
   if (!state.evaluation.length) {
@@ -445,6 +480,10 @@ function clearResultChip(key) {
 }
 
 function renderCareers() {
+  if (careerRenderTimer) {
+    clearTimeout(careerRenderTimer);
+    careerRenderTimer = null;
+  }
   if (!state.catalog.length) return;
   const queryText = $("#career-search").value.trim();
   const query = queryText.toLowerCase();

@@ -745,6 +745,8 @@ h3 {
   background: var(--surface);
   box-shadow: var(--shadow-xs);
   transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 190px;
 }
 .mos-row:hover {
   border-color: var(--line-strong);
@@ -1320,6 +1322,7 @@ progress::-moz-progress-bar {
   border-top: 1px solid var(--line);
   background: var(--surface);
 }
+.site-footer nav a:hover { text-decoration: underline; }
 .site-footer strong { color: var(--ink); }
 .site-footer p {
   max-width: 520px;
@@ -1363,6 +1366,7 @@ dialog {
   background: var(--surface);
   color: var(--ink);
   box-shadow: var(--shadow-lg);
+  overflow-y: auto;
 }
 dialog[open] { display: block; }
 dialog::backdrop {
@@ -1518,9 +1522,18 @@ dialog::backdrop {
     position: static;
     grid-template-columns: 1fr 1fr;
   }
-  .side-action { align-self: end; }
+  .side-action {
+    grid-column: 1 / -1;
+    align-self: end;
+  }
   .score-grid { grid-template-columns: repeat(3, 1fr); }
   .pulhes-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 920px) {
+  .privacy-badge { display: none; }
+  .desktop-nav a { padding: 9px 11px; font-size: 13px; }
+  .brand-mark { width: 40px; height: 40px; }
 }
 
 @media (max-width: 900px) {
@@ -1598,8 +1611,7 @@ dialog::backdrop {
     gap: 2px;
     padding: 8px 6px max(8px, env(safe-area-inset-bottom));
     border-top: 1px solid var(--line);
-    background: rgba(255, 255, 255, .94);
-    backdrop-filter: blur(14px);
+    background: rgba(255, 255, 255, .95);
     box-shadow: 0 -12px 30px rgba(16, 31, 24, .1);
   }
   .mobile-nav a {
@@ -1624,6 +1636,10 @@ dialog::backdrop {
   .score-grid, .pulhes-grid { grid-template-columns: 1fr; }
   .hero-panel ul { grid-template-columns: 1fr; }
   .brand-copy small { display: none; }
+  .category-section h2 { display: block; }
+  .category-section h2 small { display: block; margin-top: 4px; }
+  .mos-row { padding: 14px; }
+  .mos-row h3 { font-size: 17px; }
 }
 
 /* ---------------------------------------------------------------------------
@@ -1705,8 +1721,8 @@ dialog::backdrop {
     background: var(--surface-2);
   }
   .filter-panel-title, .form-steps, .side-checklist li { color: var(--ink); }
-  .desktop-nav, .app-header, .mobile-nav, .filter-panel {
-    backdrop-filter: blur(16px);
+  .app-header {
+    backdrop-filter: blur(16px) saturate(1.2);
   }
   .save-button, .dialog-close, input, select, textarea {
     background: var(--surface-2);
