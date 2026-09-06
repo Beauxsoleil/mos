@@ -69,6 +69,42 @@ function clearDraft() {
   }
 }
 
+const TOTAL_FORM_FIELDS = LINE_SCORES.length + Object.keys(PULHES).length + 6;
+
+function updateFormCompletion() {
+  const form = $("#eligibility-form");
+  if (!form) return;
+  const data = new FormData(form);
+  let complete = 0;
+  LINE_SCORES.forEach(score => {
+    if (data.get(score) !== "") complete += 1;
+  });
+  Object.keys(PULHES).forEach(code => {
+    if (data.get(`pulhes${code}`)) complete += 1;
+  });
+  ["colorVision", "citizenship", "driversLicense", "clearanceEligible", "splitTrainingOption", "lineScoreWaiverRequested"].forEach(field => {
+    if (data.get(field)) complete += 1;
+  });
+  const percent = Math.round(complete / TOTAL_FORM_FIELDS * 100);
+  const countEl = $("#completion-count");
+  const bar = $("#completion-bar");
+  const pct = $("#completion-percent");
+  const line = $(".form-progress-line");
+  if (countEl) countEl.textContent = `${complete} of ${TOTAL_FORM_FIELDS} fields complete`;
+  if (bar) {
+    bar.max = TOTAL_FORM_FIELDS;
+    bar.value = complete;
+  }
+  if (pct) pct.textContent = `${percent}%`;
+  if (line) line.style.inset = `0 ${100 - percent}% 0 0`;
+  form.classList.toggle("form-complete", complete === TOTAL_FORM_FIELDS);
+}
+
+function handleFormInput() {
+  saveDraft();
+  updateFormCompletion();
+}
+
 const state = {
   catalog: [],
   categories: [],
@@ -84,6 +120,7 @@ const escapeHtml = (value = "") => String(value).replace(/[&<>'"]/g, char => ({"
 async function init() {
   buildFormFields();
   restoreDraft();
+  updateFormCompletion();
   bindEvents();
   route();
 }
@@ -131,11 +168,13 @@ function bindEvents() {
   $$('[data-route]').forEach(link => link.addEventListener("click", () => setTimeout(route)));
   $$('[data-route-button]').forEach(button => button.addEventListener("click", () => navigate(button.dataset.routeButton)));
   $("#eligibility-form").addEventListener("submit", handleEvaluation);
-  $("#eligibility-form").addEventListener("input", saveDraft);
+  $("#eligibility-form").addEventListener("input", handleFormInput);
   $("#clear-form").addEventListener("click", clearForm);
+  $("#side-evaluate").addEventListener("click", () => $("#eligibility-form").requestSubmit());
   $("#career-search").addEventListener("input", renderCareers);
   $("#career-category").addEventListener("change", renderCareers);
   $("#career-availability").addEventListener("change", renderCareers);
+  $("#career-sort").addEventListener("change", renderCareers);
   $("#clear-career-filters").addEventListener("click", clearCareerFilters);
   $("#result-search").addEventListener("input", renderResults);
   $("#result-category").addEventListener("change", renderResults);
@@ -243,6 +282,7 @@ function showValidationErrors(errors) {
 function clearForm() {
   $("#eligibility-form").reset();
   clearValidationErrors();
+  updateFormCompletion();
   state.evaluation = [];
   clearDraft();
 }
@@ -351,12 +391,15 @@ function resultSort(a, b) {
 }
 
 function renderResults() {
+  const empty = $("#results-list");
+  const count = $("#result-count");
   if (!state.evaluation.length) {
-    $("#results-list").innerHTML = `<div class="empty-state"><h2>No evaluation yet</h2><p>Enter your information to generate explained results.</p></div>`;
+    if (empty) empty.innerHTML = `<div class="empty-state"><h2>No evaluation yet</h2><p>Enter your information to generate explained results.</p></div>`;
     const summary = $("#result-summary");
     if (summary) summary.textContent = "Complete the eligibility form to see results.";
-    const count = $("#result-count");
     if (count) count.textContent = "";
+    const active = $("#result-active-filters");
+    if (active) active.innerHTML = "";
     return;
   }
   const counts = state.evaluation.reduce((acc, item) => (acc[item.eligibility.status]++, acc), {eligible:0,waiver:0,review:0,ineligible:0});
@@ -364,12 +407,13 @@ function renderResults() {
   if (summary) {
     summary.innerHTML = `<span class="tally tally-eligible">${counts.eligible} eligible</span><span class="tally tally-waiver">${counts.waiver} waiver</span><span class="tally tally-review">${counts.review} review</span><span class="tally tally-ineligible">${counts.ineligible} not eligible yet</span>`;
   }
-  const query = $("#result-search").value.trim().toLowerCase();
+  const queryText = $("#result-search").value.trim();
+  const query = queryText.toLowerCase();
   const category = $("#result-category").value;
   const status = $("#result-status").value;
   const filtered = state.evaluation.filter(record => matchesQuery(record, query) && (category === "all" || record.category === category) && (status === "all" || record.eligibility.status === status));
-  const count = $("#result-count");
   if (count) count.textContent = `Showing ${filtered.length} of ${state.evaluation.length} evaluated MOSs`;
+  renderResultActiveFilters(queryText, category, status);
   renderGrouped(filtered, $("#results-list"), true);
 }
 
@@ -380,20 +424,82 @@ function clearResultFilters() {
   renderResults();
 }
 
+function renderResultActiveFilters(query, category, status) {
+  const target = $("#result-active-filters");
+  if (!target) return;
+  const chips = [];
+  if (query) chips.push(`<button class="filter-chip" type="button" data-clear-result="query">Search: “${escapeHtml(query)}” <em aria-hidden="true">×</em></button>`);
+  if (category !== "all") chips.push(`<button class="filter-chip" type="button" data-clear-result="category">Category: ${escapeHtml(category)} <em aria-hidden="true">×</em></button>`);
+  if (status !== "all") {
+    const label = ({eligible:"Eligible", waiver:"Waiver scenario", review:"Needs review", ineligible:"Not eligible yet"})[status] || status;
+    chips.push(`<button class="filter-chip" type="button" data-clear-result="status">Result: ${escapeHtml(label)} <em aria-hidden="true">×</em></button>`);
+  }
+  target.innerHTML = chips.length ? chips.join("") : `<span class="muted-note">No filters applied</span>`;
+}
+
+function clearResultChip(key) {
+  if (key === "query") $("#result-search").value = "";
+  if (key === "category") $("#result-category").value = "all";
+  if (key === "status") $("#result-status").value = "all";
+  renderResults();
+}
+
 function renderCareers() {
   if (!state.catalog.length) return;
-  const query = $("#career-search").value.trim().toLowerCase();
+  const queryText = $("#career-search").value.trim();
+  const query = queryText.toLowerCase();
   const category = $("#career-category").value;
   const availability = $("#career-availability").value;
+  const sort = $("#career-sort") ? $("#career-sort").value : "mos";
   const filtered = state.catalog.filter(record => matchesQuery(record, query) && (category === "all" || record.category === category) && matchesAvailability(record, availability));
-  $("#career-count").textContent = `${filtered.length} of ${state.catalog.length} pathways shown`;
-  $("#career-list").innerHTML = filtered.length ? filtered.map(record => mosCard(record)).join("") : emptyState("No careers match those filters.");
+  const sorted = [...filtered].sort((a, b) => {
+    if (sort === "title") return a.title.localeCompare(b.title) || a.mos.localeCompare(b.mos);
+    if (sort === "category") return a.category.localeCompare(b.category) || a.mos.localeCompare(b.mos);
+    if (sort === "availability") return availabilitySortValue(a) - availabilitySortValue(b) || a.mos.localeCompare(b.mos);
+    return a.mos.localeCompare(b.mos);
+  });
+  $("#career-count").textContent = `${sorted.length} of ${state.catalog.length} pathways shown`;
+  $("#career-list").innerHTML = sorted.length ? sorted.map(record => mosCard(record)).join("") : emptyState("No careers match those filters.");
+  renderCareerActiveFilters(queryText, category, availability, sort);
+}
+
+function availabilitySortValue(record) {
+  const availability = record.idaho_availability;
+  if (availability.current_public_posting_seen) return 0;
+  if (availability.catalog_listed) return 1;
+  return 2;
 }
 
 function clearCareerFilters() {
   $("#career-search").value = "";
   $("#career-category").value = "all";
   $("#career-availability").value = "all";
+  if ($("#career-sort")) $("#career-sort").value = "mos";
+  renderCareers();
+}
+
+function renderCareerActiveFilters(query, category, availability, sort) {
+  const target = $("#career-active-filters");
+  if (!target) return;
+  const chips = [];
+  if (query) chips.push(`<button class="filter-chip" type="button" data-clear-career="query">Search: “${escapeHtml(query)}” <em aria-hidden="true">×</em></button>`);
+  if (category !== "all") chips.push(`<button class="filter-chip" type="button" data-clear-career="category">Category: ${escapeHtml(category)} <em aria-hidden="true">×</em></button>`);
+  if (availability !== "all") {
+    const label = ({current:"Posting seen", catalog:"Idaho catalog-listed", unverified:"Availability unverified"})[availability] || availability;
+    chips.push(`<button class="filter-chip" type="button" data-clear-career="availability">Idaho: ${escapeHtml(label)} <em aria-hidden="true">×</em></button>`);
+  }
+  if (sort !== "mos") {
+    const label = ({title:"Job title", category:"Category", availability:"Idaho evidence"})[sort] || sort;
+    chips.push(`<button class="filter-chip" type="button" data-clear-career="sort">Sort: ${escapeHtml(label)} <em aria-hidden="true">×</em></button>`);
+  }
+  target.innerHTML = chips.length ? chips.join("") : `<span class="muted-note">No filters applied</span>`;
+}
+
+function clearCareerChip(key) {
+  if (key === "query") $("#career-search").value = "";
+  if (key === "category") $("#career-category").value = "all";
+  if (key === "availability") $("#career-availability").value = "all";
+  if (key === "sort" && $("#career-sort")) $("#career-sort").value = "mos";
   renderCareers();
 }
 
@@ -404,7 +510,7 @@ function renderGrouped(records, target, withEligibility) {
     map.get(record.category).push(record);
     return map;
   }, new Map());
-  target.innerHTML = [...groups.entries()].map(([category, items]) => `<section class="category-section"><h2>${escapeHtml(category)} <small>(${items.length})</small></h2><div class="card-grid">${items.map(record => mosCard(record, withEligibility)).join("")}</div></section>`).join("");
+  target.innerHTML = [...groups.entries()].map(([category, items]) => `<section class="category-section"><h2>${escapeHtml(category)} <small>(${items.length})</small></h2><div class="result-list">${items.map(record => mosCard(record, withEligibility)).join("")}</div></section>`).join("");
 }
 
 function matchesQuery(record, query) {
@@ -422,13 +528,20 @@ function matchesAvailability(record, filter) {
 function mosCard(record, withEligibility = false) {
   const saved = state.saved.has(record.mos);
   const resultBadge = withEligibility ? eligibilityBadge(record.eligibility.status) : availabilityBadge(record);
-  return `<article class="mos-card">
-    <div class="mos-title-row"><span class="mos-code">${escapeHtml(record.mos)}</span>${resultBadge}</div>
-    <p class="mos-card-eyebrow">${escapeHtml(record.category)} · ${escapeHtml(record.subcategory)}</p>
-    <h3>${escapeHtml(record.title)}</h3>
-    <p>${escapeHtml(record.description)}</p>
-    ${withEligibility ? eligibilityExplanation(record) : ""}
-    <div class="mos-card-footer"><button class="link-button" type="button" data-detail="${escapeHtml(record.mos)}">View details</button><button class="save-button" type="button" data-save="${escapeHtml(record.mos)}" aria-label="${saved ? "Remove" : "Save"} ${escapeHtml(record.mos)}" aria-pressed="${saved}">${saved ? "★" : "☆"}</button></div>
+  return `<article class="mos-row">
+    <div class="mos-row-main">
+      <div class="mos-row-head"><span class="mos-code">${escapeHtml(record.mos)}</span><h3>${escapeHtml(record.title)}</h3></div>
+      <p class="mos-row-eyebrow">${escapeHtml(record.category)} · ${escapeHtml(record.subcategory)}</p>
+      <p class="mos-row-desc">${escapeHtml(record.description)}</p>
+      ${withEligibility ? eligibilityExplanation(record) : ""}
+    </div>
+    <div class="mos-row-meta">
+      <div class="mos-badges">${resultBadge}</div>
+      <div class="mos-row-actions">
+        <button class="link-button" type="button" data-detail="${escapeHtml(record.mos)}">View details</button>
+        <button class="save-button" type="button" data-save="${escapeHtml(record.mos)}" aria-label="${saved ? "Remove" : "Save"} ${escapeHtml(record.mos)}" aria-pressed="${saved}">${saved ? "★" : "☆"}</button>
+      </div>
+    </div>
   </article>`;
 }
 
@@ -500,6 +613,10 @@ function handleDelegatedClick(event) {
   if (detail) openDetail(detail.dataset.detail);
   const save = event.target.closest("[data-save]");
   if (save) toggleSaved(save.dataset.save);
+  const resultChip = event.target.closest("[data-clear-result]");
+  if (resultChip) clearResultChip(resultChip.dataset.clearResult);
+  const careerChip = event.target.closest("[data-clear-career]");
+  if (careerChip) clearCareerChip(careerChip.dataset.clearCareer);
 }
 
 function openDetail(mos, refreshOnly = false) {

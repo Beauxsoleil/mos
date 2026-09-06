@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#092c1f">
+  <meta name="theme-color" content="#0c2f23">
   <meta name="description" content="Explore Idaho Army National Guard MOS pathways and estimate eligibility from line scores and screening information.">
   <meta name="robots" content="index,follow">
   <link rel="canonical" href="https://beauxsoleil.github.io/mos/">
@@ -36,18 +36,24 @@
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
-  <header class="site-header">
-    <a class="brand" href="#home" data-route="home" aria-label="Idaho MOS Pathfinder home">
-      <span class="brand-mark" aria-hidden="true">ID</span>
-      <span><strong>Idaho MOS</strong><small>Pathfinder</small></span>
-    </a>
-    <nav class="desktop-nav" aria-label="Primary navigation">
-      <a href="#home" data-route="home">Home</a>
-      <a href="#eligibility" data-route="eligibility">Check eligibility</a>
-      <a href="#careers" data-route="careers">Careers</a>
-      <a href="#saved" data-route="saved">Saved</a>
-      <a href="#recruiter" data-route="recruiter">Recruiter</a>
-    </nav>
+
+  <header class="app-header">
+    <div class="header-inner">
+      <a class="brand" href="#home" data-route="home" aria-label="Idaho MOS Pathfinder home">
+        <span class="brand-mark" aria-hidden="true">ID</span>
+        <span class="brand-copy"><strong>Idaho MOS</strong><small>Pathfinder</small></span>
+      </a>
+      <nav class="desktop-nav" aria-label="Primary navigation">
+        <a href="#home" data-route="home">Home</a>
+        <a href="#eligibility" data-route="eligibility">Check eligibility</a>
+        <a href="#careers" data-route="careers">Careers</a>
+        <a href="#saved" data-route="saved">Saved</a>
+        <a href="#recruiter" data-route="recruiter">Recruiter</a>
+      </nav>
+      <span class="privacy-badge" title="This tool runs entirely in your browser.">
+        <span aria-hidden="true">🔒</span> Private
+      </span>
+    </div>
   </header>
 
   <main id="main" tabindex="-1">
@@ -65,6 +71,7 @@
           <p><strong>Private by default.</strong> This calculator does not ask for your name, Social Security number, birthday, or medical documents.</p>
         </div>
       </div>
+
       <aside class="hero-panel" aria-label="What the calculator provides">
         <div class="mountain" aria-hidden="true"></div>
         <p class="panel-kicker">Built for honest counseling</p>
@@ -75,6 +82,30 @@
         </ul>
         <p class="small">Qualification requirements use the April 2025 source workbook. Idaho availability is time-stamped and always requires recruiter confirmation.</p>
       </aside>
+
+      <div class="steps-grid" aria-label="How the explorer works">
+        <article class="step-card">
+          <span class="step-number" aria-hidden="true">1</span>
+          <div class="step-body">
+            <h2>Enter your scores</h2>
+            <p>Ten Army line scores plus a PULHES profile. Completion is tracked so you always know where you are.</p>
+          </div>
+        </article>
+        <article class="step-card">
+          <span class="step-number" aria-hidden="true">2</span>
+          <div class="step-body">
+            <h2>Review fit</h2>
+            <p>Get explained results: what passes, what needs review, and the exact requirement holding an MOS back.</p>
+          </div>
+        </article>
+        <article class="step-card">
+          <span class="step-number" aria-hidden="true">3</span>
+          <div class="step-body">
+            <h2>Talk to a recruiter</h2>
+            <p>Save a shortlist locally, then bring it to an Idaho recruiter to confirm availability and next steps.</p>
+          </div>
+        </article>
+      </div>
     </section>
 
     <section id="eligibility" class="view" data-view="eligibility" hidden>
@@ -83,100 +114,195 @@
         <h1>Enter your information</h1>
         <p>Use the line scores shown on your official score record. Fields marked required must be completed before evaluation.</p>
       </div>
-      <form id="eligibility-form" autocomplete="off" novalidate>
-        <ol class="form-steps" aria-label="Eligibility form progress">
-          <li data-index="1">Line scores</li>
-          <li data-index="2">PULHES</li>
-          <li data-index="3">Screening</li>
-          <li data-index="4">Results</li>
-        </ol>
-        <div id="error-summary" class="error-summary" role="alert" tabindex="-1" hidden></div>
 
-        <fieldset class="form-card">
-          <legend><span>1</span> Army line scores</legend>
-          <p class="field-help">These are composite line scores—not ASVAB percentile or raw subtest scores.</p>
-          <div id="line-score-grid" class="score-grid"></div>
-        </fieldset>
+      <div class="eligibility-workspace">
+        <div class="form-column">
+          <form id="eligibility-form" autocomplete="off" novalidate>
+            <div class="form-progress" aria-hidden="true">
+              <span class="form-progress-line"></span>
+            </div>
+            <ol class="form-steps" aria-label="Eligibility form progress">
+              <li data-index="1">Line scores</li>
+              <li data-index="2">PULHES</li>
+              <li data-index="3">Screening</li>
+              <li data-index="4">Results</li>
+            </ol>
+            <div id="error-summary" class="error-summary" role="alert" tabindex="-1" hidden></div>
 
-        <fieldset class="form-card">
-          <legend><span>2</span> PULHES profile</legend>
-          <p class="field-help">Choose your official profile values. If you have not received a profile, select “Not yet rated.”</p>
-          <div id="pulhes-grid" class="pulhes-grid"></div>
-        </fieldset>
+            <fieldset class="form-card">
+              <legend><span>1</span> Army line scores</legend>
+              <details class="help-details">
+                <summary>What am I entering?</summary>
+                <p>Composite line scores such as <strong>GT</strong>, <strong>GM</strong>, and <strong>EL</strong> are not the same as your ASVAB percentile or raw subtest scores. Use the two-letter score codes shown on your official score record.</p>
+              </details>
+              <div id="line-score-grid" class="score-grid"></div>
+            </fieldset>
 
-        <fieldset class="form-card">
-          <legend><span>3</span> Screening information</legend>
-          <p class="field-help">These answers screen workbook requirements; they do not grant a medical qualification or security clearance.</p>
-          <div class="question-grid">
-            <label>Color vision<select name="colorVision" required aria-describedby="error-colorVision"><option value="">Select</option><option value="normal">Normal</option><option value="red_green">Red/green only</option><option value="no_color">No color vision</option><option value="unknown">Unknown</option></select><span class="field-error" id="error-colorVision"></span></label>
-            <label>U.S. citizenship<select name="citizenship" required aria-describedby="error-citizenship"><option value="">Select</option><option value="us_citizen">U.S. citizen</option><option value="non_citizen">Not a U.S. citizen</option><option value="unknown">Unknown</option></select><span class="field-error" id="error-citizenship"></span></label>
-            <label>Driver’s license<select name="driversLicense" required aria-describedby="error-driversLicense"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option><option value="unknown">Unknown</option></select><span class="field-error" id="error-driversLicense"></span></label>
-            <label>Potentially clearance eligible<select name="clearanceEligible" required aria-describedby="error-clearanceEligible"><option value="">Select</option><option value="yes">Yes / no known issue</option><option value="no">No / known issue</option><option value="unknown">Unknown</option></select><span class="field-error" id="error-clearanceEligible"></span></label>
-            <label>Split Training Option applicant<select name="splitTrainingOption" required aria-describedby="error-splitTrainingOption"><option value="">Select</option><option value="no">No</option><option value="yes">Yes</option><option value="unknown">Unknown</option></select><span class="field-error" id="error-splitTrainingOption"></span></label>
-            <label>Show line-score waiver scenarios<select name="lineScoreWaiverRequested" required aria-describedby="error-lineScoreWaiverRequested"><option value="">Select</option><option value="no">No</option><option value="yes">Yes</option></select><span class="field-error" id="error-lineScoreWaiverRequested"></span></label>
-          </div>
-        </fieldset>
+            <fieldset class="form-card">
+              <legend><span>2</span> PULHES profile</legend>
+              <details class="help-details">
+                <summary>What is a PULHES profile?</summary>
+                <p>PULHES records your physical capacity in six areas: Physical capacity (<strong>P</strong>), Upper extremities (<strong>U</strong>), Lower extremities (<strong>L</strong>), Hearing (<strong>H</strong>), Eyes (<strong>E</strong>), and Psychiatric (<strong>S</strong>). If you have not received a profile, choose “Not yet rated.”</p>
+              </details>
+              <div id="pulhes-grid" class="pulhes-grid"></div>
+            </fieldset>
 
-        <div class="form-actions">
-          <button class="button text-button" type="button" id="clear-form">Clear my data</button>
-          <button class="button primary" type="submit">Evaluate MOS options</button>
+            <fieldset class="form-card">
+              <legend><span>3</span> Screening information</legend>
+              <details class="help-details">
+                <summary>Why are these questions asked?</summary>
+                <p>These answers screen workbook requirements. They do not grant a medical qualification or a security clearance; they only help the calculator avoid suggesting a path that is clearly unavailable to you right now.</p>
+              </details>
+              <div class="question-grid">
+                <label>Color vision<select name="colorVision" required aria-describedby="error-colorVision"><option value="">Select</option><option value="normal">Normal</option><option value="red_green">Red/green only</option><option value="no_color">No color vision</option><option value="unknown">Unknown</option></select><span class="field-error" id="error-colorVision"></span></label>
+                <label>U.S. citizenship<select name="citizenship" required aria-describedby="error-citizenship"><option value="">Select</option><option value="us_citizen">U.S. citizen</option><option value="non_citizen">Not a U.S. citizen</option><option value="unknown">Unknown</option></select><span class="field-error" id="error-citizenship"></span></label>
+                <label>Driver’s license<select name="driversLicense" required aria-describedby="error-driversLicense"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option><option value="unknown">Unknown</option></select><span class="field-error" id="error-driversLicense"></span></label>
+                <label>Potentially clearance eligible<select name="clearanceEligible" required aria-describedby="error-clearanceEligible"><option value="">Select</option><option value="yes">Yes / no known issue</option><option value="no">No / known issue</option><option value="unknown">Unknown</option></select><span class="field-error" id="error-clearanceEligible"></span></label>
+                <label>Split Training Option applicant<select name="splitTrainingOption" required aria-describedby="error-splitTrainingOption"><option value="">Select</option><option value="no">No</option><option value="yes">Yes</option><option value="unknown">Unknown</option></select><span class="field-error" id="error-splitTrainingOption"></span></label>
+                <label>Show line-score waiver scenarios<select name="lineScoreWaiverRequested" required aria-describedby="error-lineScoreWaiverRequested"><option value="">Select</option><option value="no">No</option><option value="yes">Yes</option></select><span class="field-error" id="error-lineScoreWaiverRequested"></span></label>
+              </div>
+            </fieldset>
+
+            <div class="form-actions">
+              <button class="button text-button" type="button" id="clear-form">Clear my data</button>
+              <button class="button primary" type="submit">Evaluate MOS options</button>
+            </div>
+          </form>
         </div>
-      </form>
+
+        <aside class="form-side-panel" aria-label="Eligibility form help and completion">
+          <div class="side-panel-group">
+            <p class="side-panel-kicker">What you’ll enter</p>
+            <ul class="side-checklist">
+              <li>Official score record line scores</li>
+              <li>PULHES profile or “not yet rated”</li>
+              <li>Six quick screening answers</li>
+            </ul>
+          </div>
+          <div class="completion-panel">
+            <div class="completion-head">
+              <span id="completion-count" aria-live="polite">0 of 22 fields complete</span>
+              <span id="completion-percent">0%</span>
+            </div>
+            <progress id="completion-bar" max="22" value="0" aria-label="Eligibility form completion"></progress>
+            <p class="completion-hint">Your answers are stored only in this browser.</p>
+          </div>
+          <div class="side-action">
+            <button class="button primary full" type="button" id="side-evaluate">Evaluate MOS options</button>
+            <p class="small">You can adjust any value and recalculate as many times as you want.</p>
+          </div>
+        </aside>
+      </div>
     </section>
 
     <section id="results" class="view" data-view="results" hidden>
       <div class="section-heading results-heading">
-        <div><p class="eyebrow">Your estimate</p><h1>MOS results</h1><p id="result-summary">Complete the eligibility form to see results.</p></div>
+        <div>
+          <p class="eyebrow">Your estimate</p>
+          <h1>MOS results</h1>
+          <p id="result-summary">Complete the eligibility form to see results.</p>
+        </div>
         <button class="button secondary compact" type="button" data-route-button="eligibility">Edit inputs</button>
       </div>
       <div class="freshness-banner"><strong>Availability is not a reservation.</strong> “Posting seen” and “Idaho catalog-listed” are time-stamped public evidence. A recruiter must confirm a current, contractable vacancy.</div>
       <div class="results-guide"><strong>Not eligible yet?</strong> Each result names the requirement that is holding it back and gives a next step. Unknown information is never counted as a pass.</div>
-      <div class="legend" aria-label="Result color key">
-        <span class="legend-item"><span class="legend-dot eligible" aria-hidden="true"></span>Eligible</span>
-        <span class="legend-item"><span class="legend-dot waiver" aria-hidden="true"></span>Waiver scenario</span>
-        <span class="legend-item"><span class="legend-dot review" aria-hidden="true"></span>Needs review</span>
-        <span class="legend-item"><span class="legend-dot ineligible" aria-hidden="true"></span>Not eligible yet</span>
+
+      <div class="workspace">
+        <aside class="filter-panel" aria-label="Result filters">
+          <div class="filter-panel-title">Refine results</div>
+          <label>Search<input id="result-search" type="search" placeholder="MOS or job title" autocomplete="off"></label>
+          <label>Category<select id="result-category"><option value="all">All categories</option></select></label>
+          <label>Result<select id="result-status"><option value="all">All results</option><option value="eligible">Eligible</option><option value="waiver">Waiver scenario</option><option value="review">Needs review</option><option value="ineligible">Not eligible yet</option></select></label>
+          <button class="filter-reset" type="button" id="clear-result-filters">Reset all</button>
+          <p class="filter-hint">Results update as you type. Nothing is sent anywhere.</p>
+          <div class="status-key" aria-label="Result color key">
+            <p class="status-key-title">Result key</p>
+            <span class="key-item"><span class="key-icon key-eligible" aria-hidden="true">✓</span>Eligible</span>
+            <span class="key-item"><span class="key-icon key-waiver" aria-hidden="true">!</span>Waiver</span>
+            <span class="key-item"><span class="key-icon key-review" aria-hidden="true">?</span>Review</span>
+            <span class="key-item"><span class="key-icon key-ineligible" aria-hidden="true">–</span>Not yet</span>
+          </div>
+        </aside>
+        <div class="workspace-main">
+          <div id="result-active-filters" class="active-filters" aria-live="polite"></div>
+          <p id="result-count" class="count-line" aria-live="polite"></p>
+          <div id="results-list" class="result-list" aria-live="polite"></div>
+        </div>
       </div>
-      <div class="filters" aria-label="Result filters">
-        <label>Search<input id="result-search" type="search" placeholder="MOS or job title" autocomplete="off"></label>
-        <label>Category<select id="result-category"><option value="all">All categories</option></select></label>
-        <label>Result<select id="result-status"><option value="all">All results</option><option value="eligible">Eligible</option><option value="waiver">Waiver scenario</option><option value="review">Needs review</option><option value="ineligible">Not eligible yet</option></select></label>
-        <button class="filter-reset" type="button" id="clear-result-filters">Reset</button>
-      </div>
-      <p id="result-count" class="count-line" aria-live="polite"></p>
-      <div id="results-list" class="catalog-sections" aria-live="polite"></div>
     </section>
 
     <section id="careers" class="view" data-view="careers" hidden>
-      <div class="section-heading"><p class="eyebrow">Explore before you test</p><h1>Career catalog</h1><p>Browse all workbook pathways. Idaho labels show public evidence—not guaranteed openings.</p></div>
-      <div class="filters">
-        <label>Search<input id="career-search" type="search" placeholder="Try medic, mechanic, 25B…" autocomplete="off"></label>
-        <label>Category<select id="career-category"><option value="all">All categories</option></select></label>
-        <label>Idaho evidence<select id="career-availability"><option value="all">All records</option><option value="current">Posting seen</option><option value="catalog">Idaho catalog-listed</option><option value="unverified">Availability unverified</option></select></label>
-        <button class="filter-reset" type="button" id="clear-career-filters">Reset</button>
+      <div class="section-heading">
+        <p class="eyebrow">Explore before you test</p>
+        <h1>Career catalog</h1>
+        <p>Browse all workbook pathways. Idaho labels show public evidence—not guaranteed openings.</p>
       </div>
-      <p id="career-count" class="count-line" aria-live="polite"></p>
-      <div id="career-list" class="card-grid"></div>
+
+      <div class="workspace">
+        <aside class="filter-panel" aria-label="Career filters">
+          <div class="filter-panel-title">Filters</div>
+          <label>Search<input id="career-search" type="search" placeholder="Medic, mechanic, 25B…" autocomplete="off"></label>
+          <label>Category<select id="career-category"><option value="all">All categories</option></select></label>
+          <label>Idaho evidence<select id="career-availability"><option value="all">All records</option><option value="current">Posting seen</option><option value="catalog">Idaho catalog-listed</option><option value="unverified">Availability unverified</option></select></label>
+          <label>Sort<select id="career-sort"><option value="mos">MOS code</option><option value="title">Job title</option><option value="category">Category</option><option value="availability">Idaho evidence</option></select></label>
+          <button class="filter-reset" type="button" id="clear-career-filters">Reset all</button>
+          <p class="filter-hint">Live search and filters keep the catalog easy to scan.</p>
+        </aside>
+        <div class="workspace-main">
+          <div id="career-active-filters" class="active-filters" aria-live="polite"></div>
+          <p id="career-count" class="count-line" aria-live="polite"></p>
+          <div id="career-list" class="result-list"></div>
+        </div>
+      </div>
     </section>
 
     <section id="saved" class="view" data-view="saved" hidden>
-      <div class="section-heading"><p class="eyebrow">Stored on this device</p><h1>Saved MOSs</h1><p>Use this shortlist when you talk with your recruiter.</p></div>
+      <div class="section-heading">
+        <p class="eyebrow">Stored on this device</p>
+        <h1>Saved MOSs</h1>
+        <p>Use this shortlist when you talk with your recruiter.</p>
+      </div>
       <p id="saved-count" class="count-line" aria-live="polite"></p>
-      <div id="saved-list" class="card-grid"></div>
+      <div id="saved-list" class="result-list"></div>
     </section>
 
     <section id="recruiter" class="view" data-view="recruiter" hidden>
-      <div class="section-heading"><p class="eyebrow">Final confirmation</p><h1>Talk with an Idaho recruiter</h1><p>A recruiter can confirm vacancies, review exceptions, and explain the enlistment pathway.</p></div>
+      <div class="section-heading">
+        <p class="eyebrow">Final confirmation</p>
+        <h1>Talk with an Idaho recruiter</h1>
+        <p>A recruiter can confirm vacancies, review exceptions, and explain the enlistment pathway.</p>
+      </div>
       <div class="recruiter-layout">
-        <article class="form-card recruiter-card"><h2>What to bring</h2><ul class="checklist"><li>Your official score report</li><li>Any known PULHES information</li><li>Your top three saved MOSs</li><li>Questions about location, training, bonus, and availability</li></ul></article>
-        <article class="form-card recruiter-card"><h2>Idaho Army National Guard</h2><p>Call <a href="tel:+12085146197">208-514-6197</a> or use the official recruiting contact page.</p><a class="button primary" href="https://www.serveinidaho.com/contact" target="_blank" rel="noopener">Open official contact page</a><p class="small">This site does not transmit your calculator answers.</p></article>
+        <article class="form-card recruiter-card">
+          <h2>What to bring</h2>
+          <ul class="checklist">
+            <li>Your official score report</li>
+            <li>Any known PULHES information</li>
+            <li>Your top three saved MOSs</li>
+            <li>Questions about location, training, bonus, and availability</li>
+          </ul>
+        </article>
+        <article class="form-card recruiter-card">
+          <h2>Idaho Army National Guard</h2>
+          <p>Call <a href="tel:+12085146197">208-514-6197</a> or use the official recruiting contact page.</p>
+          <a class="button primary" href="https://www.serveinidaho.com/contact" target="_blank" rel="noopener">Open official contact page</a>
+          <p class="small">This site does not transmit your calculator answers.</p>
+        </article>
       </div>
     </section>
   </main>
 
   <footer class="site-footer">
-    <div><strong>Idaho MOS Pathfinder</strong><p>A private counseling aid—not an official qualification or vacancy decision.</p></div>
-    <nav aria-label="Supporting information"><a href="#careers" data-route="careers">Career catalog</a><a href="#recruiter" data-route="recruiter">Recruiter contact</a><a href="./methodology.html">How results work</a><a href="https://github.com/Beauxsoleil/mos">Page source</a></nav>
+    <div>
+      <strong>Idaho MOS Pathfinder</strong>
+      <p>A private counseling aid—not an official qualification or vacancy decision.</p>
+    </div>
+    <nav aria-label="Supporting information">
+      <a href="#careers" data-route="careers">Career catalog</a>
+      <a href="#recruiter" data-route="recruiter">Recruiter contact</a>
+      <a href="./methodology.html">How results work</a>
+      <a href="https://github.com/Beauxsoleil/mos">Page source</a>
+    </nav>
   </footer>
 
   <nav class="mobile-nav" aria-label="Mobile navigation">
