@@ -19,6 +19,56 @@ function readSavedMos() {
   }
 }
 
+const STORAGE_DRAFT = "idahoMosDraft";
+
+function readDraft() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_DRAFT) || "{}");
+    return stored && typeof stored === "object" && !Array.isArray(stored) ? stored : {};
+  } catch {
+    return {};
+  }
+}
+
+function restoreDraft() {
+  const draft = readDraft();
+  const form = $("#eligibility-form");
+  if (!form || !draft || typeof draft !== "object") return;
+  Object.entries(draft).forEach(([name, value]) => {
+    if (typeof value !== "string" || value === "") return;
+    const field = form.elements[name];
+    if (!field) return;
+    if (field.type === "number") {
+      const number = Number(value);
+      if (Number.isInteger(number) && number >= 0 && number <= 200) field.value = String(number);
+    } else if ("value" in field) {
+      field.value = value;
+    }
+  });
+}
+
+function saveDraft(event) {
+  const form = $("#eligibility-form");
+  if (!form) return;
+  const draft = {};
+  new FormData(form).forEach((value, key) => {
+    if (value) draft[key] = String(value);
+  });
+  try {
+    localStorage.setItem(STORAGE_DRAFT, JSON.stringify(draft));
+  } catch {
+    /* Local storage is optional. */
+  }
+}
+
+function clearDraft() {
+  try {
+    localStorage.removeItem(STORAGE_DRAFT);
+  } catch {
+    /* Local storage is optional. */
+  }
+}
+
 const state = {
   catalog: [],
   categories: [],
@@ -33,6 +83,7 @@ const escapeHtml = (value = "") => String(value).replace(/[&<>'"]/g, char => ({"
 
 async function init() {
   buildFormFields();
+  restoreDraft();
   bindEvents();
   route();
 }
@@ -80,13 +131,16 @@ function bindEvents() {
   $$('[data-route]').forEach(link => link.addEventListener("click", () => setTimeout(route)));
   $$('[data-route-button]').forEach(button => button.addEventListener("click", () => navigate(button.dataset.routeButton)));
   $("#eligibility-form").addEventListener("submit", handleEvaluation);
+  $("#eligibility-form").addEventListener("input", saveDraft);
   $("#clear-form").addEventListener("click", clearForm);
   $("#career-search").addEventListener("input", renderCareers);
   $("#career-category").addEventListener("change", renderCareers);
   $("#career-availability").addEventListener("change", renderCareers);
+  $("#clear-career-filters").addEventListener("click", clearCareerFilters);
   $("#result-search").addEventListener("input", renderResults);
   $("#result-category").addEventListener("change", renderResults);
   $("#result-status").addEventListener("change", renderResults);
+  $("#clear-result-filters").addEventListener("click", clearResultFilters);
   document.addEventListener("click", handleDelegatedClick);
   $("#mos-dialog .dialog-close").addEventListener("click", () => $("#mos-dialog").close());
   $("#mos-dialog").addEventListener("click", event => {
@@ -190,7 +244,7 @@ function clearForm() {
   $("#eligibility-form").reset();
   clearValidationErrors();
   state.evaluation = [];
-  localStorage.removeItem("idahoMosInputs");
+  clearDraft();
 }
 
 function evaluateMos(record, input) {
@@ -299,15 +353,31 @@ function resultSort(a, b) {
 function renderResults() {
   if (!state.evaluation.length) {
     $("#results-list").innerHTML = `<div class="empty-state"><h2>No evaluation yet</h2><p>Enter your information to generate explained results.</p></div>`;
+    const summary = $("#result-summary");
+    if (summary) summary.textContent = "Complete the eligibility form to see results.";
+    const count = $("#result-count");
+    if (count) count.textContent = "";
     return;
   }
   const counts = state.evaluation.reduce((acc, item) => (acc[item.eligibility.status]++, acc), {eligible:0,waiver:0,review:0,ineligible:0});
-  $("#result-summary").textContent = `${counts.eligible} eligible · ${counts.waiver} waiver scenarios · ${counts.review} need review · ${counts.ineligible} not eligible yet`;
+  const summary = $("#result-summary");
+  if (summary) {
+    summary.innerHTML = `<span class="tally tally-eligible">${counts.eligible} eligible</span><span class="tally tally-waiver">${counts.waiver} waiver</span><span class="tally tally-review">${counts.review} review</span><span class="tally tally-ineligible">${counts.ineligible} not eligible yet</span>`;
+  }
   const query = $("#result-search").value.trim().toLowerCase();
   const category = $("#result-category").value;
   const status = $("#result-status").value;
   const filtered = state.evaluation.filter(record => matchesQuery(record, query) && (category === "all" || record.category === category) && (status === "all" || record.eligibility.status === status));
+  const count = $("#result-count");
+  if (count) count.textContent = `Showing ${filtered.length} of ${state.evaluation.length} evaluated MOSs`;
   renderGrouped(filtered, $("#results-list"), true);
+}
+
+function clearResultFilters() {
+  $("#result-search").value = "";
+  $("#result-category").value = "all";
+  $("#result-status").value = "all";
+  renderResults();
 }
 
 function renderCareers() {
@@ -318,6 +388,13 @@ function renderCareers() {
   const filtered = state.catalog.filter(record => matchesQuery(record, query) && (category === "all" || record.category === category) && matchesAvailability(record, availability));
   $("#career-count").textContent = `${filtered.length} of ${state.catalog.length} pathways shown`;
   $("#career-list").innerHTML = filtered.length ? filtered.map(record => mosCard(record)).join("") : emptyState("No careers match those filters.");
+}
+
+function clearCareerFilters() {
+  $("#career-search").value = "";
+  $("#career-category").value = "all";
+  $("#career-availability").value = "all";
+  renderCareers();
 }
 
 function renderGrouped(records, target, withEligibility) {
@@ -347,6 +424,7 @@ function mosCard(record, withEligibility = false) {
   const resultBadge = withEligibility ? eligibilityBadge(record.eligibility.status) : availabilityBadge(record);
   return `<article class="mos-card">
     <div class="mos-title-row"><span class="mos-code">${escapeHtml(record.mos)}</span>${resultBadge}</div>
+    <p class="mos-card-eyebrow">${escapeHtml(record.category)} · ${escapeHtml(record.subcategory)}</p>
     <h3>${escapeHtml(record.title)}</h3>
     <p>${escapeHtml(record.description)}</p>
     ${withEligibility ? eligibilityExplanation(record) : ""}
@@ -431,11 +509,11 @@ function openDetail(mos, refreshOnly = false) {
   const videoUrl = safeHttpUrl(record.video_url);
   $("#dialog-content").innerHTML = `<div class="detail-title"><p class="eyebrow">${escapeHtml(record.category)} · ${escapeHtml(record.subcategory)}</p><h2 id="dialog-title">${escapeHtml(record.mos)} ${escapeHtml(record.title)}</h2></div>
     <div class="detail-meta">${record.eligibility ? eligibilityBadge(record.eligibility.status) : ""}${availabilityBadge(record)}</div>
-    <p>${escapeHtml(record.description)}</p>
+    <p class="detail-intro">${escapeHtml(record.description)}</p>
     <section class="detail-section"><h3>Idaho status</h3><p>${escapeHtml(availabilityText(record))}</p></section>
     ${criteria.length ? `<section class="detail-section"><h3>Why this result</h3><ul class="criteria-list">${criteria.filter(c => c.status !== "not_applicable").map(c => `<li class="${c.status === "fail" ? "fail" : c.status === "unknown" ? "unknown" : ""}"><strong>${escapeHtml(c.kind)}:</strong> ${escapeHtml(c.summary)}</li>`).join("")}</ul></section>` : ""}
-    <section class="detail-section"><h3>Workbook requirements</h3><ul class="criteria-list"><li><strong>Line score:</strong> ${escapeHtml(record.requirements.line_score_text)}</li><li><strong>PULHES:</strong> ${escapeHtml(record.requirements.pulhes_text)}</li><li><strong>Vision:</strong> ${escapeHtml(record.requirements.vision_text)}</li><li><strong>Physical demand:</strong> ${escapeHtml(record.requirements.physical_demand || "Not listed")}</li><li><strong>AIT:</strong> ${escapeHtml(record.training.ait_length_text || "Confirm with recruiter")}</li></ul></section>
-    ${record.eligibility && record.eligibility.status !== "eligible" ? `<section class="detail-section next-step-panel"><h3>Your path forward</h3><ul class="criteria-list">${record.eligibility.criteria.filter(c => ["fail", "unknown", "waiver"].includes(c.status)).map(c => `<li><strong>${escapeHtml(c.kind)}:</strong> ${escapeHtml(explainCriterion(c))}<small>${escapeHtml(nextStepFor(c))}</small></li>`).join("")}</ul></section>` : ""}
+    <section class="detail-section"><h3>Workbook requirements</h3><div class="requirement-grid"><div class="requirement-item"><strong>Line score</strong><span>${escapeHtml(record.requirements.line_score_text)}</span></div><div class="requirement-item"><strong>PULHES</strong><span>${escapeHtml(record.requirements.pulhes_text)}</span></div><div class="requirement-item"><strong>Vision</strong><span>${escapeHtml(record.requirements.vision_text)}</span></div><div class="requirement-item"><strong>Physical demand</strong><span>${escapeHtml(record.requirements.physical_demand || "Not listed")}</span></div><div class="requirement-item"><strong>AIT</strong><span>${escapeHtml(record.training.ait_length_text || "Confirm with recruiter")}</span></div></div></section>
+    ${record.eligibility && record.eligibility.status !== "eligible" ? `<section class="detail-section"><h3>Your path forward</h3><div class="next-step-panel"><ul class="criteria-list">${record.eligibility.criteria.filter(c => ["fail", "unknown", "waiver"].includes(c.status)).map(c => `<li><strong>${escapeHtml(c.kind)}:</strong> ${escapeHtml(explainCriterion(c))}<small>${escapeHtml(nextStepFor(c))}</small></li>`).join("")}</ul></div></section>` : ""}
     <section class="detail-section"><h3>Next step</h3><div class="actions">${videoUrl ? `<a class="button secondary" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener">Watch MOS video</a>` : ""}<button class="button primary" type="button" data-save="${escapeHtml(record.mos)}">${state.saved.has(record.mos) ? "Remove from saved" : "Save this MOS"}</button></div><p class="source-note">Qualification estimate only. Final MOS eligibility and vacancy availability require official review.</p></section>`;
   if (!refreshOnly) $("#mos-dialog").showModal();
 }
@@ -452,6 +530,8 @@ function toggleSaved(mos) {
 
 function renderSaved() {
   const records = state.catalog.filter(record => state.saved.has(record.mos));
+  const count = $("#saved-count");
+  if (count) count.textContent = `${records.length} saved ${records.length === 1 ? "MOS" : "MOSs"} on this device`;
   $("#saved-list").innerHTML = records.length ? records.map(record => mosCard(record)).join("") : emptyState("No MOSs saved yet. Browse careers or save from your results.");
 }
 

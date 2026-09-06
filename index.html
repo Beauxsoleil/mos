@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#24362d">
+  <meta name="theme-color" content="#092c1f">
   <meta name="description" content="Explore Idaho Army National Guard MOS pathways and estimate eligibility from line scores and screening information.">
   <meta name="robots" content="index,follow">
   <link rel="canonical" href="https://beauxsoleil.github.io/mos/">
@@ -83,7 +83,13 @@
         <h1>Enter your information</h1>
         <p>Use the line scores shown on your official score record. Fields marked required must be completed before evaluation.</p>
       </div>
-      <form id="eligibility-form" novalidate>
+      <form id="eligibility-form" autocomplete="off" novalidate>
+        <ol class="form-steps" aria-label="Eligibility form progress">
+          <li data-index="1">Line scores</li>
+          <li data-index="2">PULHES</li>
+          <li data-index="3">Screening</li>
+          <li data-index="4">Results</li>
+        </ol>
         <div id="error-summary" class="error-summary" role="alert" tabindex="-1" hidden></div>
 
         <fieldset class="form-card">
@@ -125,27 +131,37 @@
       </div>
       <div class="freshness-banner"><strong>Availability is not a reservation.</strong> “Posting seen” and “Idaho catalog-listed” are time-stamped public evidence. A recruiter must confirm a current, contractable vacancy.</div>
       <div class="results-guide"><strong>Not eligible yet?</strong> Each result names the requirement that is holding it back and gives a next step. Unknown information is never counted as a pass.</div>
+      <div class="legend" aria-label="Result color key">
+        <span class="legend-item"><span class="legend-dot eligible" aria-hidden="true"></span>Eligible</span>
+        <span class="legend-item"><span class="legend-dot waiver" aria-hidden="true"></span>Waiver scenario</span>
+        <span class="legend-item"><span class="legend-dot review" aria-hidden="true"></span>Needs review</span>
+        <span class="legend-item"><span class="legend-dot ineligible" aria-hidden="true"></span>Not eligible yet</span>
+      </div>
       <div class="filters" aria-label="Result filters">
-        <label>Search<input id="result-search" type="search" placeholder="MOS or job title"></label>
+        <label>Search<input id="result-search" type="search" placeholder="MOS or job title" autocomplete="off"></label>
         <label>Category<select id="result-category"><option value="all">All categories</option></select></label>
         <label>Result<select id="result-status"><option value="all">All results</option><option value="eligible">Eligible</option><option value="waiver">Waiver scenario</option><option value="review">Needs review</option><option value="ineligible">Not eligible yet</option></select></label>
+        <button class="filter-reset" type="button" id="clear-result-filters">Reset</button>
       </div>
+      <p id="result-count" class="count-line" aria-live="polite"></p>
       <div id="results-list" class="catalog-sections" aria-live="polite"></div>
     </section>
 
     <section id="careers" class="view" data-view="careers" hidden>
       <div class="section-heading"><p class="eyebrow">Explore before you test</p><h1>Career catalog</h1><p>Browse all workbook pathways. Idaho labels show public evidence—not guaranteed openings.</p></div>
       <div class="filters">
-        <label>Search<input id="career-search" type="search" placeholder="Try medic, mechanic, 25B…"></label>
+        <label>Search<input id="career-search" type="search" placeholder="Try medic, mechanic, 25B…" autocomplete="off"></label>
         <label>Category<select id="career-category"><option value="all">All categories</option></select></label>
         <label>Idaho evidence<select id="career-availability"><option value="all">All records</option><option value="current">Posting seen</option><option value="catalog">Idaho catalog-listed</option><option value="unverified">Availability unverified</option></select></label>
+        <button class="filter-reset" type="button" id="clear-career-filters">Reset</button>
       </div>
-      <p id="career-count" class="count-line"></p>
+      <p id="career-count" class="count-line" aria-live="polite"></p>
       <div id="career-list" class="card-grid"></div>
     </section>
 
     <section id="saved" class="view" data-view="saved" hidden>
       <div class="section-heading"><p class="eyebrow">Stored on this device</p><h1>Saved MOSs</h1><p>Use this shortlist when you talk with your recruiter.</p></div>
+      <p id="saved-count" class="count-line" aria-live="polite"></p>
       <div id="saved-list" class="card-grid"></div>
     </section>
 
