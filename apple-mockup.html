@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Idaho MOS Pathfinder — Apple-style concept mockups</title>
+<style>
+  :root {
+    /* ---- Apple-style semantic tokens (community-measured, HIG-inspired) ---- */
+    --label: #000000;
+    --label-2: rgba(60,60,67,0.6);
+    --label-3: rgba(60,60,67,0.3);
+    --bg: #ffffff;
+    --grouped: #f2f2f7;
+    --surface: #ffffff;
+    --elevated: #ffffff;
+    --sep: rgba(60,60,67,0.29);
+    --sep-soft: rgba(60,60,67,0.18);
+    --fill: rgba(120,120,128,0.12);
+    --fill-2: rgba(120,120,128,0.08);
+    --bar: rgba(249,249,249,0.82);
+    --blue: #007aff;
+    --blue-2: #0a84ff;
+    --green: #34c759;
+    --green-tint: rgba(52,199,89,0.16);
+    --orange: #ff9500;
+    --orange-tint: rgba(255,149,0,0.16);
+    --red: #ff3b30;
+    --red-tint: rgba(255,59,48,0.14);
+    --gray-tint: rgba(120,120,128,0.16);
+    --indigo-tint: rgba(88,86,214,0.16);
+    --teal-tint: rgba(48,176,199,0.16);
+    --screen: #ffffff;
+    --hairline: rgba(0,0,0,0.1);
+    --panel: #f6f6f8;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: #e9e9ef;
+    color: #1d1d1f;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    font-optical-sizing: auto;
+  }
+
+  /* ---------- Spec-sheet chrome (outside the phones) ---------- */
+  .spec-header {
+    padding: 40px 24px 28px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .spec-header h1 { font-size: 40px; letter-spacing: -0.02em; margin: 0 0 8px; font-weight: 700; }
+  .spec-header p { font-size: 17px; color: rgba(60,60,67,0.7); margin: 0; max-width: 720px; line-height: 1.45; }
+  .spec-header .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+  .legend .chip { font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 999px; background: #fff; color: #1d1d1f; border: 1px solid rgba(0,0,0,0.08); }
+  .canvas {
+    display: flex; flex-wrap: wrap; gap: 48px 40px;
+    max-width: 1320px; margin: 0 auto; padding: 16px 24px 90px;
+    justify-content: center;
+  }
+  .phone-block { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .phone-block .label { font-size: 13px; font-weight: 600; letter-spacing: 0.01em; color: rgba(60,60,67,0.65); }
+
+  /* ---------- Phone frame ---------- */
+  .phone {
+    position: relative;
+    width: 393px; height: 852px;
+    background: var(--screen);
+    border-radius: 55px;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.06), 0 34px 90px rgba(0,0,0,0.28);
+    font-family: inherit;
+  }
+  .phone.dark {
+    --screen: #000;
+    --label: #ffffff;
+    --label-2: rgba(235,235,245,0.6);
+    --label-3: rgba(235,235,245,0.3);
+    --bg: #000000;
+    --grouped: #000000;
+    --surface: #1c1c1e;
+    --elevated: #1c1c1e;
+    --sep: rgba(84,84,88,0.6);
+    --sep-soft: rgba(84,84,88,0.4);
+    --fill: rgba(120,120,128,0.24);
+    --fill-2: rgba(120,120,128,0.16);
+    --bar: rgba(22,22,23,0.8);
+    --blue: #0a84ff;
+    --blue-2: #0a84ff;
+    --green: #30d158;
+    --green-tint: rgba(48,209,88,0.18);
+    --orange: #ff9f0a;
+    --orange-tint: rgba(255,159,10,0.18);
+    --red: #ff453a;
+    --red-tint: rgba(255,69,58,0.18);
+    --gray-tint: rgba(120,120,128,0.24);
+  }
+  .screen { position: absolute; inset: 0; display: flex; flex-direction: column; }
+
+  /* status bar */
+  .statusbar {
+    position: absolute; top: 0; left: 0; right: 0; height: 54px; z-index: 30;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 30px 0;
+    color: var(--label);
+  }
+  .statusbar .time { font-size: 15px; font-weight: 600; letter-spacing: 0.01em; }
+  .statusbar .icons { display: flex; align-items: center; gap: 6px; }
+  .statusbar svg { display: block; }
+  .island {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    width: 126px; height: 36px; border-radius: 20px; background: #000; z-index: 40;
+  }
+
+  /* ---------- Nav bar (translucent large title) ---------- */
+  .navbar {
+    position: relative; z-index: 20;
+    padding: 60px 20px 0;
+    background: var(--bar);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--sep-soft);
+  }
+  .navbar.small { padding-bottom: 12px; }
+  .navbar .back { display:flex; align-items:center; gap:2px; font-size:17px; color: var(--blue); margin-bottom: 4px; }
+  .navbar .back svg { width: 20px; height: 20px; }
+  .navbar h2 { margin: 0; font-size: 34px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+  .navbar.small h2 { font-size: 17px; font-weight: 600; text-align: center; }
+
+  .content { flex: 1; overflow: hidden; padding: 18px 20px 24px; }
+  .content.grouped { background: var(--grouped); }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; height: 50px; border-radius: 14px;
+    font-size: 17px; font-weight: 600; border: none; cursor: pointer;
+  }
+  .btn.primary { background: var(--blue); color: #fff; }
+  .btn.primary.alt { background: var(--blue-2); }
+  .btn.secondary { background: transparent; color: var(--blue); border: 1px solid var(--blue); }
+  .btn.tinted { background: var(--fill); color: var(--label); }
+
+  /* ---------- Cards ---------- */
+  .card {
+    background: var(--surface); border-radius: 20px; padding: 18px;
+    margin-bottom: 14px;
+  }
+  .hero-card { background: var(--surface); border-radius: 24px; padding: 22px; margin-bottom: 16px; }
+  .hero-card .kicker { font-size: 13px; font-weight: 600; color: var(--blue); letter-spacing: 0.01em; margin: 0 0 8px; text-transform: uppercase; }
+  .hero-card h3 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 8px; line-height: 1.15; }
+  .hero-card p { font-size: 15px; color: var(--label-2); margin: 0; line-height: 1.45; }
+
+  .benefit-card { display: flex; gap: 14px; align-items: flex-start; background: var(--green-tint); border-radius: 18px; padding: 16px; margin-bottom: 14px; }
+  .benefit-card .ic { width: 32px; height: 32px; border-radius: 9px; background: var(--green); color: #fff; display: grid; place-items: center; flex: 0 0 auto; }
+  .benefit-card h4 { margin: 0 0 3px; font-size: 15px; font-weight: 600; }
+  .benefit-card p { margin: 0; font-size: 13px; color: var(--label-2); line-height: 1.4; }
+  .benefit-card a { color: var(--green); font-weight: 600; text-decoration: none; }
+
+  .privacy-card { display: flex; gap: 12px; align-items: flex-start; background: var(--fill-2); border-radius: 18px; padding: 15px 16px; margin-bottom: 14px; }
+  .privacy-card .ic { color: var(--label-2); flex: 0 0 auto; }
+  .privacy-card h4 { margin: 0 0 2px; font-size: 14px; font-weight: 600; }
+  .privacy-card p { margin: 0; font-size: 13px; color: var(--label-2); line-height: 1.4; }
+
+  /* ---------- Grouped list (Settings style) ---------- */
+  .section-title { font-size: 13px; text-transform: uppercase; color: var(--label-2); letter-spacing: 0.01em; margin: 18px 16px 6px; }
+  .section-title:first-child { margin-top: 6px; }
+  .list { background: var(--surface); border-radius: 12px; margin: 0 16px; overflow: hidden; }
+  .row { position: relative; display: flex; align-items: center; min-height: 44px; padding: 10px 16px; gap: 12px; }
+  .row + .row::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; height: 1px; background: var(--sep-soft); }
+  .row .grow { flex: 1; min-width: 0; }
+  .row .rt { font-size: 17px; color: var(--label); }
+  .row .rd { font-size: 13px; color: var(--label-2); margin-top: 1px; }
+  .row .value { font-size: 17px; color: var(--label-2); }
+  .row .chev { color: var(--label-3); }
+  .row .chev svg { display: block; width: 14px; height: 14px; }
+
+  /* numeric field pill */
+  .field {
+    width: 84px; height: 34px; border-radius: 9px; background: var(--fill-2);
+    display: flex; align-items: center; justify-content: flex-end; padding: 0 12px;
+    font-size: 16px; font-weight: 600; color: var(--label);
+    font-variant-numeric: tabular-nums;
+  }
+  .field.placeholder { color: var(--label-3); font-weight: 400; }
+
+  /* iOS switch */
+  .switch { width: 51px; height: 31px; border-radius: 16px; background: var(--green); position: relative; flex: 0 0 auto; }
+  .switch::after { content: ""; position: absolute; top: 2px; left: 22px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
+  .switch.off { background: var(--fill); }
+  .switch.off::after { left: 2px; }
+
+  /* segmented control */
+  .segmented { display: flex; background: var(--fill-2); border-radius: 9px; padding: 2px; margin: 0 16px 12px; }
+  .segmented span { flex: 1; text-align: center; padding: 7px 0; font-size: 13px; font-weight: 500; color: var(--label); border-radius: 7px; }
+  .segmented span.active { background: var(--surface); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.12); }
+
+  /* search field */
+  .search {
+    display: flex; align-items: center; gap: 6px; margin: 0 16px 14px;
+    height: 38px; padding: 0 12px; border-radius: 10px; background: var(--fill);
+    color: var(--label-2); font-size: 16px;
+  }
+  .search svg { width: 15px; height: 15px; }
+
+  /* job cards */
+  .job { background: var(--surface); border-radius: 16px; padding: 14px 16px; margin-bottom: 12px; }
+  .job .top { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .mos { font-size: 12px; font-weight: 700; letter-spacing: 0.03em; padding: 3px 9px; border-radius: 7px; background: var(--fill); color: var(--label); }
+  .job h4 { margin: 0; font-size: 16px; font-weight: 600; flex: 1; }
+  .job p { margin: 0 0 8px; font-size: 13px; color: var(--label-2); line-height: 1.4; }
+  .job .hint { font-size: 13px; color: var(--label-2); }
+
+  /* status capsules (tinted) */
+  .cap { display: inline-flex; align-items: center; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; }
+  .cap.green { background: var(--green-tint); color: #1e7a34; }
+  .cap.orange { background: var(--orange-tint); color: #b26a00; }
+  .cap.red { background: var(--red-tint); color: #c6281f; }
+  .cap.gray { background: var(--gray-tint); color: var(--label-2); }
+  .dark .cap.green { color: #30d158; }
+  .dark .cap.orange { color: #ff9f0a; }
+  .dark .cap.red { color: #ff453a; }
+
+  .study-card { background: var(--green-tint); border-radius: 16px; padding: 14px 16px; margin-bottom: 14px; }
+  .study-card h4 { margin: 0 0 6px; font-size: 15px; font-weight: 600; }
+  .study-card ul { margin: 0; padding-left: 18px; }
+  .study-card li { font-size: 13px; color: var(--label-2); line-height: 1.45; margin-bottom: 4px; }
+
+  /* ---------- Tab bar ---------- */
+  .tabbar {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 84px; z-index: 20;
+    display: flex; padding: 8px 6px 24px;
+    background: var(--bar);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-top: 1px solid var(--sep-soft);
+  }
+  .tabbar .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; color: var(--label-3); }
+  .tabbar .tab.on { color: var(--blue); }
+  .tabbar svg { width: 24px; height: 24px; }
+
+  /* ---------- Bottom sheet ---------- */
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 25;
+    background: var(--elevated); border-radius: 22px 22px 0 0;
+    padding: 10px 20px 30px; box-shadow: 0 -10px 40px rgba(0,0,0,0.18);
+  }
+  .sheet .grabber { width: 36px; height: 5px; border-radius: 3px; background: var(--label-3); margin: 0 auto 12px; }
+  .sheet .badges { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .sheet h3 { margin: 0 0 6px; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+  .sheet .sub { font-size: 14px; color: var(--label-2); margin: 0 0 14px; line-height: 1.45; }
+  .sheet .sheet-section { padding: 12px 0; border-top: 1px solid var(--sep-soft); }
+  .sheet .sheet-section h5 { margin: 0 0 8px; font-size: 13px; font-weight: 600; text-transform: uppercase; color: var(--label-2); letter-spacing: 0.02em; }
+  .sheet .sheet-section p, .sheet .sheet-section li { font-size: 14px; color: var(--label); line-height: 1.45; margin: 0 0 6px; }
+  .sheet .sheet-section ul { margin: 0; padding-left: 18px; }
+  .sheet .row-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+
+  /* misc */
+  .dim { color: var(--label-2); }
+  .mt { margin-top: 14px; }
+  .rowstrip { display: flex; gap: 10px; overflow: hidden; margin: 0 -20px; padding: 0 20px; }
+  .minicard { flex: 0 0 130px; background: var(--surface); border-radius: 16px; padding: 14px; }
+  .minicard .mos { margin-bottom: 8px; display: inline-block; }
+  .minicard h5 { margin: 0 0 2px; font-size: 14px; font-weight: 600; }
+  .minicard p { margin: 0; font-size: 12px; color: var(--label-2); }
+
+  .stack-actions { display: flex; flex-direction: column; gap: 10px; }
+</style>
+</head>
+<body>
+
+<header class="spec-header">
+  <h1>Idaho MOS Pathfinder — Apple-style concept</h1>
+  <p>A design-only mockup of every screen in the proposed Apple Human Interface Guidelines style: SF-style system typography, translucent nav &amp; tab bars, grouped inset lists, tinted status capsules, and radius-plus-material cards (no borders, no drop shadows). This page is a standalone concept — it does not touch the live app.</p>
+  <div class="legend">
+    <span class="chip">Clarity · Deference · Depth</span>
+    <span class="chip">SF Pro system stack</span>
+    <span class="chip">Adaptive light/dark tokens</span>
+    <span class="chip">8pt grid · 44pt targets</span>
+    <span class="chip">Idaho green tint option</span>
+  </div>
+</header>
+
+<main class="canvas">
+
+  <!-- ============ 1. HOME (light) ============ -->
+  <div class="phone-block">
+    <div class="phone">
+      <div class="island"></div>
+      <div class="statusbar">
+        <span class="time">9:41</span>
+        <span class="icons">
+          <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="0.6" fill="currentColor"/><rect x="5" y="6" width="3" height="6" rx="0.6" fill="currentColor"/><rect x="10" y="3.5" width="3" height="8.5" rx="0.6" fill="currentColor"/><rect x="15" y="1" width="3" height="11" rx="0.6" fill="currentColor" opacity="0.35"/></svg>
+          <svg width="17" height="12" viewBox="0 0 17 12"><path d="M8.5 2a9 9 0 0 1 6.3 2.6l-1.3 1.5a7 7 0 0 0-10 0L2.2 4.6A9 9 0 0 1 8.5 2Z" fill="currentColor"/><path d="M8.5 6.3A4.6 4.6 0 0 1 11.7 7.6l-1.2 1.5a2.7 2.7 0 0 0-4 0L5.3 7.6A4.6 4.6 0 0 1 8.5 6.3Z" fill="currentColor"/><circle cx="8.5" cy="11" r="1.2" fill="currentColor"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3" fill="none" stroke="currentColor" opacity="0.4"/><rect x="2" y="2" width="15" height="8" rx="1.5" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.4"/></svg>
+        </span>
+      </div>
+      <div class="screen">
+        <div class="navbar"><h2>Pathfinder</h2></div>
+        <div class="content">
+          <div class="hero-card">
+            <p class="kicker">Idaho Army National Guard</p>
+            <h3>See which Army jobs your scores unlock.</h3>
+            <p>Type your line scores and get your list — plus exactly what to study to unlock more. Private, on-device, no account.</p>
+          </div>
+          <div class="stack-actions">
+            <button class="btn primary">Check my eligibility</button>
+            <button class="btn secondary">Browse all jobs</button>
+          </div>
+          <div class="benefit-card">
+            <span class="ic">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9.5 12 3l10 6.5"/><path d="M6 11v7a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-7"/><path d="M10 20v-5h4v5"/></svg>
+            </span>
+            <div>
+              <h4>College paid. Job skills. One weekend a month.</h4>
+              <p>Tuition help while you live and work in Idaho. <a href="#">See official benefits →</a></p>
+            </div>
+          </div>
+          <div class="privacy-card">
+            <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+            <div>
+              <h4>Private by default</h4>
+              <p>No name, SSN, or birthday. Your answers never leave this device.</p>
+            </div>
+          </div>
+          <p class="section-title">Popular in Idaho</p>
+          <div class="rowstrip">
+            <div class="minicard"><span class="mos">11B</span><h5>Infantry</h5><p>Combat arms</p></div>
+            <div class="minicard"><span class="mos">68W</span><h5>Combat Medic</h5><p>Medical</p></div>
+            <div class="minicard"><span class="mos">88M</span><h5>Motor Transport</h5><p>Support</p></div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tab on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.7 20.6 10a1 1 0 0 1 .4.8V20a1 1 0 0 1-1 1h-4.5v-5.4a1.6 1.6 0 0 0-1.6-1.6h-3.8a1.6 1.6 0 0 0-1.6 1.6V21H4a1 1 0 0 1-1-1v-9.2a1 1 0 0 1 .4-.8L12 2.7Z"/></svg><span>Home</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="3"/><path d="m9 11 2 2 4-4"/></svg><span>Eligibility</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg><span>Jobs</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12a1 1 0 0 1 1 1v15l-4.5-3L10 20l-3-3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" transform="translate(1.5 -1)"/></svg><span>Saved</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-5 8-5s8 1.7 8 5"/></svg><span>Recruiter</span></div>
+        </div>
+      </div>
+    </div>
+    <span class="label">1 · Home (light)</span>
+  </div>
+
+  <!-- ============ 2. ELIGIBILITY FORM ============ -->
+  <div class="phone-block">
+    <div class="phone">
+      <div class="island"></div>
+      <div class="statusbar">
+        <span class="time">9:41</span>
+        <span class="icons">
+          <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="0.6" fill="currentColor"/><rect x="5" y="6" width="3" height="6" rx="0.6" fill="currentColor"/><rect x="10" y="3.5" width="3" height="8.5" rx="0.6" fill="currentColor"/><rect x="15" y="1" width="3" height="11" rx="0.6" fill="currentColor" opacity="0.35"/></svg>
+          <svg width="17" height="12" viewBox="0 0 17 12"><path d="M8.5 2a9 9 0 0 1 6.3 2.6l-1.3 1.5a7 7 0 0 0-10 0L2.2 4.6A9 9 0 0 1 8.5 2Z" fill="currentColor"/><path d="M8.5 6.3A4.6 4.6 0 0 1 11.7 7.6l-1.2 1.5a2.7 2.7 0 0 0-4 0L5.3 7.6A4.6 4.6 0 0 1 8.5 6.3Z" fill="currentColor"/><circle cx="8.5" cy="11" r="1.2" fill="currentColor"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3" fill="none" stroke="currentColor" opacity="0.4"/><rect x="2" y="2" width="15" height="8" rx="1.5" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.4"/></svg>
+        </span>
+      </div>
+      <div class="screen">
+        <div class="navbar small"><h2>Your scores</h2></div>
+        <div class="content grouped">
+          <p class="section-title">Line scores</p>
+          <div class="list">
+            <div class="row"><div class="grow"><div class="rt">GT</div><div class="rd">General Technical</div></div><span class="field">110</span></div>
+            <div class="row"><div class="grow"><div class="rt">ST</div><div class="rd">Skilled Technical</div></div><span class="field">101</span></div>
+            <div class="row"><div class="grow"><div class="rt">GM</div><div class="rd">General Maintenance</div></div><span class="field">88</span></div>
+            <div class="row"><div class="grow"><div class="rt">EL</div><div class="rd">Electronics</div></div><span class="field placeholder">—</span></div>
+            <div class="row"><div class="grow"><div class="rt">CL</div><div class="rd">Clerical</div></div><span class="field placeholder">—</span></div>
+            <div class="row"><div class="grow"><div class="rt">MM</div><div class="rd">Mechanical Maintenance</div></div><span class="field placeholder">—</span></div>
+            <div class="row"><div class="grow"><div class="rt">SC</div><div class="rd">Surveillance &amp; Comm</div></div><span class="field placeholder">—</span></div>
+            <div class="row"><div class="grow"><div class="rt">CO</div><div class="rd">Combat</div></div><span class="field placeholder">—</span></div>
+            <div class="row"><div class="grow"><div class="rt">FA</div><div class="rd">Field Artillery</div></div><span class="field placeholder">—</span></div>
+            <div class="row"><div class="grow"><div class="rt">OF</div><div class="rd">Operators &amp; Food</div></div><span class="field placeholder">—</span></div>
+          </div>
+          <p class="section-title">Medical profile</p>
+          <div class="list">
+            <div class="row"><div class="grow"><div class="rt">All 1s — no restrictions</div><div class="rd">PULHES 111111</div></div><span class="switch"></span></div>
+          </div>
+          <p class="section-title">Quick questions</p>
+          <div class="list">
+            <div class="row"><div class="grow"><div class="rt">Color vision</div></div><span class="value">Normal</span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></div>
+            <div class="row"><div class="grow"><div class="rt">U.S. citizenship</div></div><span class="value">U.S. citizen</span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></div>
+            <div class="row"><div class="grow"><div class="rt">Driver's license</div></div><span class="value">Yes</span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></div>
+            <div class="row"><div class="grow"><div class="rt">Background check</div></div><span class="value">No known issue</span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></div>
+            <div class="row"><div class="grow"><div class="rt">Split option</div></div><span class="value">No</span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></div>
+            <div class="row"><div class="grow"><div class="rt">Score waiver</div></div><span class="value">No</span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></div>
+          </div>
+          <div class="mt" style="margin:18px 16px 0;"><button class="btn primary">Show my jobs</button></div>
+        </div>
+      </div>
+    </div>
+    <span class="label">2 · Eligibility — grouped inset list</span>
+  </div>
+
+  <!-- ============ 3. RESULTS ============ -->
+  <div class="phone-block">
+    <div class="phone">
+      <div class="island"></div>
+      <div class="statusbar">
+        <span class="time">9:41</span>
+        <span class="icons">
+          <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="0.6" fill="currentColor"/><rect x="5" y="6" width="3" height="6" rx="0.6" fill="currentColor"/><rect x="10" y="3.5" width="3" height="8.5" rx="0.6" fill="currentColor"/><rect x="15" y="1" width="3" height="11" rx="0.6" fill="currentColor" opacity="0.35"/></svg>
+          <svg width="17" height="12" viewBox="0 0 17 12"><path d="M8.5 2a9 9 0 0 1 6.3 2.6l-1.3 1.5a7 7 0 0 0-10 0L2.2 4.6A9 9 0 0 1 8.5 2Z" fill="currentColor"/><path d="M8.5 6.3A4.6 4.6 0 0 1 11.7 7.6l-1.2 1.5a2.7 2.7 0 0 0-4 0L5.3 7.6A4.6 4.6 0 0 1 8.5 6.3Z" fill="currentColor"/><circle cx="8.5" cy="11" r="1.2" fill="currentColor"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3" fill="none" stroke="currentColor" opacity="0.4"/><rect x="2" y="2" width="15" height="8" rx="1.5" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.4"/></svg>
+        </span>
+      </div>
+      <div class="screen">
+        <div class="navbar"><h2>Your jobs</h2></div>
+        <div class="content">
+          <p class="dim" style="font-size:15px; margin:0 0 14px;"><strong style="color:var(--label)">12 jobs</strong> you qualify for · 4 close · 9 need a check · 30 not yet</p>
+          <div class="study-card">
+            <h4>Want more options? Study these.</h4>
+            <ul>
+              <li><strong>GT (General Technical)</strong> — Word Knowledge, Paragraph Comprehension, Arithmetic Reasoning.</li>
+              <li><strong>ST (Skilled Technical)</strong> — General Science, Verbal, Math Knowledge, Mechanics.</li>
+            </ul>
+          </div>
+          <div class="job">
+            <div class="top"><span class="mos">68W</span><h4>Combat Medic Specialist</h4><span class="cap green">You qualify</span></div>
+            <p>Emergency medical care for Soldiers in the field.</p>
+            <div class="hint">Idaho catalog · AIT 16 wks</div>
+          </div>
+          <div class="job">
+            <div class="top"><span class="mos">11B</span><h4>Infantryman</h4><span class="cap orange">Close</span></div>
+            <p>Combat operations on the ground.</p>
+            <div class="hint">CO is 2 points short — study math word problems &amp; mechanics.</div>
+          </div>
+          <div class="job">
+            <div class="top"><span class="mos">35F</span><h4>Intelligence Analyst</h4><span class="cap red">Not eligible yet</span></div>
+            <p>Analyze and interpret intelligence.</p>
+            <div class="hint">GT needs 110 — study vocabulary, reading, math word problems.</div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.7 20.6 10a1 1 0 0 1 .4.8V20a1 1 0 0 1-1 1h-4.5v-5.4a1.6 1.6 0 0 0-1.6-1.6h-3.8a1.6 1.6 0 0 0-1.6 1.6V21H4a1 1 0 0 1-1-1v-9.2a1 1 0 0 1 .4-.8L12 2.7Z"/></svg><span>Home</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="3"/><path d="m9 11 2 2 4-4"/></svg><span>Eligibility</span></div>
+          <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg><span>Jobs</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12a1 1 0 0 1 1 1v15l-4.5-3L10 20l-3-3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" transform="translate(1.5 -1)"/></svg><span>Saved</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-5 8-5s8 1.7 8 5"/></svg><span>Recruiter</span></div>
+        </div>
+      </div>
+    </div>
+    <span class="label">3 · Results — tinted capsules + study card</span>
+  </div>
+
+  <!-- ============ 4. JOB DETAIL SHEET ============ -->
+  <div class="phone-block">
+    <div class="phone">
+      <div class="island"></div>
+      <div class="statusbar">
+        <span class="time">9:41</span>
+        <span class="icons">
+          <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="0.6" fill="currentColor"/><rect x="5" y="6" width="3" height="6" rx="0.6" fill="currentColor"/><rect x="10" y="3.5" width="3" height="8.5" rx="0.6" fill="currentColor"/><rect x="15" y="1" width="3" height="11" rx="0.6" fill="currentColor" opacity="0.35"/></svg>
+          <svg width="17" height="12" viewBox="0 0 17 12"><path d="M8.5 2a9 9 0 0 1 6.3 2.6l-1.3 1.5a7 7 0 0 0-10 0L2.2 4.6A9 9 0 0 1 8.5 2Z" fill="currentColor"/><path d="M8.5 6.3A4.6 4.6 0 0 1 11.7 7.6l-1.2 1.5a2.7 2.7 0 0 0-4 0L5.3 7.6A4.6 4.6 0 0 1 8.5 6.3Z" fill="currentColor"/><circle cx="8.5" cy="11" r="1.2" fill="currentColor"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3" fill="none" stroke="currentColor" opacity="0.4"/><rect x="2" y="2" width="15" height="8" rx="1.5" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.4"/></svg>
+        </span>
+      </div>
+      <!-- dim backdrop behind sheet -->
+      <div style="position:absolute; inset:0; background: rgba(0,0,0,0.35);"></div>
+      <div class="screen" style="background:transparent;">
+        <div class="navbar small"><h2>Your jobs</h2></div>
+        <div class="content" style="opacity:0.55;">
+          <p class="dim" style="font-size:15px; margin:0 0 14px;"><strong style="color:var(--label)">12 jobs</strong> you qualify for · …</p>
+          <div class="job"><div class="top"><span class="mos">68W</span><h4>Combat Medic Specialist</h4><span class="cap green">You qualify</span></div><p>Emergency medical care.</p></div>
+          <div class="job"><div class="top"><span class="mos">11B</span><h4>Infantryman</h4><span class="cap orange">Close</span></div><p>Combat operations.</p></div>
+        </div>
+        <div class="sheet">
+          <div class="grabber"></div>
+          <div class="badges"><span class="cap green">You qualify</span><span class="cap gray">Idaho catalog</span></div>
+          <h3>68W Combat Medic Specialist</h3>
+          <p class="sub">Emergency medical care for Soldiers in the field and in garrison.</p>
+          <div class="sheet-section">
+            <h5>Why this result</h5>
+            <p>Line score ST 101 ✓ · GT 107 ✓ · PULHES 111111 ✓</p>
+          </div>
+          <div class="sheet-section">
+            <h5>What to study</h5>
+            <ul><li>Skilled Technical — General Science, Verbal, Math, Mechanics.</li></ul>
+          </div>
+          <div class="sheet-section">
+            <h5>Idaho status</h5>
+            <p>Listed in Idaho's public catalog. A recruiter confirms the current opening.</p>
+          </div>
+          <div class="row-actions">
+            <button class="btn primary">Save this job</button>
+            <button class="btn tinted">Contact a recruiter</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="label">4 · Job detail — bottom sheet</span>
+  </div>
+
+  <!-- ============ 5. CAREERS ============ -->
+  <div class="phone-block">
+    <div class="phone">
+      <div class="island"></div>
+      <div class="statusbar">
+        <span class="time">9:41</span>
+        <span class="icons">
+          <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="0.6" fill="currentColor"/><rect x="5" y="6" width="3" height="6" rx="0.6" fill="currentColor"/><rect x="10" y="3.5" width="3" height="8.5" rx="0.6" fill="currentColor"/><rect x="15" y="1" width="3" height="11" rx="0.6" fill="currentColor" opacity="0.35"/></svg>
+          <svg width="17" height="12" viewBox="0 0 17 12"><path d="M8.5 2a9 9 0 0 1 6.3 2.6l-1.3 1.5a7 7 0 0 0-10 0L2.2 4.6A9 9 0 0 1 8.5 2Z" fill="currentColor"/><path d="M8.5 6.3A4.6 4.6 0 0 1 11.7 7.6l-1.2 1.5a2.7 2.7 0 0 0-4 0L5.3 7.6A4.6 4.6 0 0 1 8.5 6.3Z" fill="currentColor"/><circle cx="8.5" cy="11" r="1.2" fill="currentColor"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3" fill="none" stroke="currentColor" opacity="0.4"/><rect x="2" y="2" width="15" height="8" rx="1.5" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.4"/></svg>
+        </span>
+      </div>
+      <div class="screen">
+        <div class="navbar"><h2>All jobs</h2></div>
+        <div class="content">
+          <div class="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            Search jobs
+          </div>
+          <div class="segmented"><span class="active">All</span><span>Combat</span><span>Medical</span><span>Support</span></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div class="minicard" style="flex:none;"><span class="mos">11B</span><h5>Infantryman</h5><p>Combat arms</p></div>
+            <div class="minicard" style="flex:none;"><span class="mos">19D</span><h5>Cavalry Scout</h5><p>Recon</p></div>
+            <div class="minicard" style="flex:none;"><span class="mos">68W</span><h5>Combat Medic</h5><p>Medical</p></div>
+            <div class="minicard" style="flex:none;"><span class="mos">25B</span><h5>IT Specialist</h5><p>Signal</p></div>
+            <div class="minicard" style="flex:none;"><span class="mos">12B</span><h5>Combat Engineer</h5><p>Engineer</p></div>
+            <div class="minicard" style="flex:none;"><span class="mos">92G</span><h5>Culinary</h5><p>Support</p></div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.7 20.6 10a1 1 0 0 1 .4.8V20a1 1 0 0 1-1 1h-4.5v-5.4a1.6 1.6 0 0 0-1.6-1.6h-3.8a1.6 1.6 0 0 0-1.6 1.6V21H4a1 1 0 0 1-1-1v-9.2a1 1 0 0 1 .4-.8L12 2.7Z"/></svg><span>Home</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="3"/><path d="m9 11 2 2 4-4"/></svg><span>Eligibility</span></div>
+          <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg><span>Jobs</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12a1 1 0 0 1 1 1v15l-4.5-3L10 20l-3-3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" transform="translate(1.5 -1)"/></svg><span>Saved</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-5 8-5s8 1.7 8 5"/></svg><span>Recruiter</span></div>
+        </div>
+      </div>
+    </div>
+    <span class="label">5 · All jobs — search + segmented control</span>
+  </div>
+
+  <!-- ============ 6. DARK MODE (Home) ============ -->
+  <div class="phone-block">
+    <div class="phone dark">
+      <div class="island"></div>
+      <div class="statusbar">
+        <span class="time">9:41</span>
+        <span class="icons">
+          <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="0.6" fill="currentColor"/><rect x="5" y="6" width="3" height="6" rx="0.6" fill="currentColor"/><rect x="10" y="3.5" width="3" height="8.5" rx="0.6" fill="currentColor"/><rect x="15" y="1" width="3" height="11" rx="0.6" fill="currentColor" opacity="0.35"/></svg>
+          <svg width="17" height="12" viewBox="0 0 17 12"><path d="M8.5 2a9 9 0 0 1 6.3 2.6l-1.3 1.5a7 7 0 0 0-10 0L2.2 4.6A9 9 0 0 1 8.5 2Z" fill="currentColor"/><path d="M8.5 6.3A4.6 4.6 0 0 1 11.7 7.6l-1.2 1.5a2.7 2.7 0 0 0-4 0L5.3 7.6A4.6 4.6 0 0 1 8.5 6.3Z" fill="currentColor"/><circle cx="8.5" cy="11" r="1.2" fill="currentColor"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3" fill="none" stroke="currentColor" opacity="0.4"/><rect x="2" y="2" width="15" height="8" rx="1.5" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.4"/></svg>
+        </span>
+      </div>
+      <div class="screen">
+        <div class="navbar"><h2>Pathfinder</h2></div>
+        <div class="content">
+          <div class="hero-card">
+            <p class="kicker">Idaho Army National Guard</p>
+            <h3>See which Army jobs your scores unlock.</h3>
+            <p>Type your line scores and get your list — plus exactly what to study to unlock more. Private, on-device, no account.</p>
+          </div>
+          <div class="stack-actions">
+            <button class="btn primary alt">Check my eligibility</button>
+            <button class="btn secondary">Browse all jobs</button>
+          </div>
+          <div class="benefit-card">
+            <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9.5 12 3l10 6.5"/><path d="M6 11v7a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-7"/><path d="M10 20v-5h4v5"/></svg></span>
+            <div><h4>College paid. Job skills. One weekend a month.</h4><p>Tuition help while you live and work in Idaho. <a href="#">See official benefits →</a></p></div>
+          </div>
+          <div class="privacy-card">
+            <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+            <div><h4>Private by default</h4><p>No name, SSN, or birthday. Your answers never leave this device.</p></div>
+          </div>
+          <p class="section-title">Popular in Idaho</p>
+          <div class="rowstrip">
+            <div class="minicard"><span class="mos">11B</span><h5>Infantry</h5><p>Combat arms</p></div>
+            <div class="minicard"><span class="mos">68W</span><h5>Combat Medic</h5><p>Medical</p></div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tab on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.7 20.6 10a1 1 0 0 1 .4.8V20a1 1 0 0 1-1 1h-4.5v-5.4a1.6 1.6 0 0 0-1.6-1.6h-3.8a1.6 1.6 0 0 0-1.6 1.6V21H4a1 1 0 0 1-1-1v-9.2a1 1 0 0 1 .4-.8L12 2.7Z"/></svg><span>Home</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="3"/><path d="m9 11 2 2 4-4"/></svg><span>Eligibility</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg><span>Jobs</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12a1 1 0 0 1 1 1v15l-4.5-3L10 20l-3-3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" transform="translate(1.5 -1)"/></svg><span>Saved</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-5 8-5s8 1.7 8 5"/></svg><span>Recruiter</span></div>
+        </div>
+      </div>
+    </div>
+    <span class="label">6 · Home — dark mode</span>
+  </div>
+
+  <!-- ============ 7. DARK MODE (Results) ============ -->
+  <div class="phone-block">
+    <div class="phone dark">
+      <div class="island"></div>
+      <div class="statusbar">
+        <span class="time">9:41</span>
+        <span class="icons">
+          <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="0.6" fill="currentColor"/><rect x="5" y="6" width="3" height="6" rx="0.6" fill="currentColor"/><rect x="10" y="3.5" width="3" height="8.5" rx="0.6" fill="currentColor"/><rect x="15" y="1" width="3" height="11" rx="0.6" fill="currentColor" opacity="0.35"/></svg>
+          <svg width="17" height="12" viewBox="0 0 17 12"><path d="M8.5 2a9 9 0 0 1 6.3 2.6l-1.3 1.5a7 7 0 0 0-10 0L2.2 4.6A9 9 0 0 1 8.5 2Z" fill="currentColor"/><path d="M8.5 6.3A4.6 4.6 0 0 1 11.7 7.6l-1.2 1.5a2.7 2.7 0 0 0-4 0L5.3 7.6A4.6 4.6 0 0 1 8.5 6.3Z" fill="currentColor"/><circle cx="8.5" cy="11" r="1.2" fill="currentColor"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3" fill="none" stroke="currentColor" opacity="0.4"/><rect x="2" y="2" width="15" height="8" rx="1.5" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.4"/></svg>
+        </span>
+      </div>
+      <div class="screen">
+        <div class="navbar"><h2>Your jobs</h2></div>
+        <div class="content">
+          <p class="dim" style="font-size:15px; margin:0 0 14px;"><strong style="color:var(--label)">12 jobs</strong> you qualify for · 4 close · 9 need a check · 30 not yet</p>
+          <div class="study-card">
+            <h4>Want more options? Study these.</h4>
+            <ul>
+              <li><strong>GT</strong> — Word Knowledge, Paragraph Comprehension, Arithmetic Reasoning.</li>
+              <li><strong>ST</strong> — General Science, Verbal, Math Knowledge, Mechanics.</li>
+            </ul>
+          </div>
+          <div class="job">
+            <div class="top"><span class="mos">68W</span><h4>Combat Medic Specialist</h4><span class="cap green">You qualify</span></div>
+            <p>Emergency medical care for Soldiers in the field.</p>
+            <div class="hint">Idaho catalog · AIT 16 wks</div>
+          </div>
+          <div class="job">
+            <div class="top"><span class="mos">11B</span><h4>Infantryman</h4><span class="cap orange">Close</span></div>
+            <p>Combat operations on the ground.</p>
+            <div class="hint">CO is 2 points short — study math word problems &amp; mechanics.</div>
+          </div>
+          <div class="job">
+            <div class="top"><span class="mos">35F</span><h4>Intelligence Analyst</h4><span class="cap red">Not eligible yet</span></div>
+            <p>Analyze and interpret intelligence.</p>
+            <div class="hint">GT needs 110 — study vocabulary, reading, math word problems.</div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.7 20.6 10a1 1 0 0 1 .4.8V20a1 1 0 0 1-1 1h-4.5v-5.4a1.6 1.6 0 0 0-1.6-1.6h-3.8a1.6 1.6 0 0 0-1.6 1.6V21H4a1 1 0 0 1-1-1v-9.2a1 1 0 0 1 .4-.8L12 2.7Z"/></svg><span>Home</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="3"/><path d="m9 11 2 2 4-4"/></svg><span>Eligibility</span></div>
+          <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg><span>Jobs</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12a1 1 0 0 1 1 1v15l-4.5-3L10 20l-3-3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" transform="translate(1.5 -1)"/></svg><span>Saved</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-5 8-5s8 1.7 8 5"/></svg><span>Recruiter</span></div>
+        </div>
+      </div>
+    </div>
+    <span class="label">7 · Results — dark mode</span>
+  </div>
+
+</main>
+</body>
+</html>

@@ -10,6 +10,36 @@ const PULHES = {
   S: "Psychiatric",
 };
 
+const LINE_SCORE_NAMES = {
+  GT: "General Technical",
+  GM: "General Maintenance",
+  EL: "Electronics",
+  CL: "Clerical",
+  MM: "Mechanical Maintenance",
+  SC: "Surveillance & Communications",
+  CO: "Combat",
+  FA: "Field Artillery",
+  OF: "Operators & Food",
+  ST: "Skilled Technical",
+};
+
+// Maps each Army line score to the ASVAB subtests that build it and the
+// subjects an applicant can actually study to raise it. Legacy subtests
+// (Numerical Operations, Coding Speed) are intentionally omitted because they
+// are no longer administered on the current ASVAB.
+const STUDY_MAP = {
+  GT: { name: "General Technical", what: "English and math", build: "Word Knowledge, Paragraph Comprehension, and Arithmetic Reasoning" },
+  GM: { name: "General Maintenance", what: "basic science, tools & auto, math, and electronics", build: "General Science, Auto & Shop, Math Knowledge, and Electronics" },
+  EL: { name: "Electronics", what: "basic science, math, and electronics", build: "General Science, Arithmetic Reasoning, Math Knowledge, and Electronics" },
+  CL: { name: "Clerical", what: "English and math", build: "Word Knowledge, Paragraph Comprehension, Arithmetic Reasoning, and Math Knowledge" },
+  MM: { name: "Mechanical Maintenance", what: "tools & auto, mechanics, and electronics", build: "Auto & Shop, Mechanical Comprehension, and Electronics" },
+  SC: { name: "Surveillance & Communications", what: "English, math, tools, and mechanics", build: "Word Knowledge, Paragraph Comprehension, Arithmetic Reasoning, Auto & Shop, and Mechanical Comprehension" },
+  CO: { name: "Combat", what: "math word problems, tools, and mechanics", build: "Arithmetic Reasoning, Auto & Shop, and Mechanical Comprehension" },
+  FA: { name: "Field Artillery", what: "math and mechanics", build: "Arithmetic Reasoning, Math Knowledge, and Mechanical Comprehension" },
+  OF: { name: "Operators & Food", what: "English, tools, and mechanics", build: "Word Knowledge, Paragraph Comprehension, Auto & Shop, and Mechanical Comprehension" },
+  ST: { name: "Skilled Technical", what: "basic science, English, math, and mechanics", build: "General Science, Word Knowledge, Paragraph Comprehension, Math Knowledge, and Mechanical Comprehension" },
+};
+
 function readSavedMos() {
   try {
     const stored = JSON.parse(localStorage.getItem("idahoMosSaved") || "[]");
@@ -34,6 +64,7 @@ const escapeHtml = (value = "") => String(value).replace(/[&<>'"]/g, char => ({"
 async function init() {
   buildFormFields();
   bindEvents();
+  restoreInputs();
   route();
 }
 
@@ -62,23 +93,28 @@ async function ensureCatalog() {
 }
 
 function buildFormFields() {
-  $("#line-score-grid").innerHTML = LINE_SCORES.map(score => `
-    <label for="score-${score}">${score}
-      <input id="score-${score}" name="${score}" type="number" inputmode="numeric" min="0" max="200" step="1" autocomplete="off" required aria-describedby="error-${score}">
-      <span class="field-error" id="error-${score}"></span>
+  $("#line-score-list").innerHTML = LINE_SCORES.map(score => `
+    <label class="row" for="score-${score}">
+      <span class="row-label">${score}<small>${escapeHtml(LINE_SCORE_NAMES[score])}</small></span>
+      <input id="score-${score}" name="${score}" class="score-input" type="number" inputmode="numeric" min="0" max="200" step="1" autocomplete="off" required>
     </label>`).join("");
-  $("#pulhes-grid").innerHTML = Object.entries(PULHES).map(([code, label]) => `
-    <label for="pulhes-${code}">${code}<small>${label}</small>
-      <select id="pulhes-${code}" name="pulhes${code}" required aria-describedby="error-pulhes-${code}">
+  $("#pulhes-list").innerHTML = Object.entries(PULHES).map(([code, label]) => `
+    <label class="row" for="pulhes-${code}">
+      <span class="row-label">${code}<small>${label}</small></span>
+      <select id="pulhes-${code}" name="pulhes${code}" class="row-select" required>
         <option value="">Select</option><option value="unknown">Not yet rated</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
-      </select><span class="field-error" id="error-pulhes-${code}"></span>
+      </select>
     </label>`).join("");
+  $("#pulhes-list").hidden = true;
+  const help = $("#pulhes-detail-help");
+  if (help) help.hidden = true;
 }
 
 function bindEvents() {
   window.addEventListener("hashchange", route);
   $$('[data-route]').forEach(link => link.addEventListener("click", () => setTimeout(route)));
   $$('[data-route-button]').forEach(button => button.addEventListener("click", () => navigate(button.dataset.routeButton)));
+  $(".score-score-helper").addEventListener("change", togglePulhesDetail);
   $("#eligibility-form").addEventListener("submit", handleEvaluation);
   $("#clear-form").addEventListener("click", clearForm);
   $("#career-search").addEventListener("input", renderCareers);
@@ -127,26 +163,7 @@ async function handleEvaluation(event) {
   event.preventDefault();
   clearValidationErrors();
   const form = new FormData(event.currentTarget);
-  const errors = [];
-  const input = {lineScores: {}, pulhes: {}};
-
-  for (const score of LINE_SCORES) {
-    const raw = form.get(score);
-    const value = Number(raw);
-    if (raw === "" || !Number.isInteger(value) || value < 0 || value > 200) {
-      errors.push({field: `score-${score}`, message: `${score} must be a whole number from 0 to 200.`});
-    } else input.lineScores[score] = value;
-  }
-  for (const factor of Object.keys(PULHES)) {
-    const raw = form.get(`pulhes${factor}`);
-    if (!raw) errors.push({field: `pulhes-${factor}`, message: `${factor} must be selected.`});
-    else input.pulhes[factor] = raw === "unknown" ? null : Number(raw);
-  }
-  for (const field of ["colorVision", "citizenship", "driversLicense", "clearanceEligible", "splitTrainingOption", "lineScoreWaiverRequested"]) {
-    const value = form.get(field);
-    if (!value) errors.push({field, message: `${fieldLabel(field)} must be selected.`});
-    input[field] = value;
-  }
+  const {input, errors} = collectInput(form);
 
   if (errors.length) {
     showValidationErrors(errors);
@@ -154,14 +171,15 @@ async function handleEvaluation(event) {
   }
 
   try { await ensureCatalog(); } catch { return; }
+  saveInputs(input);
   state.evaluation = state.catalog.map(record => evaluateMos(record, input)).sort(resultSort);
   renderResults();
   navigate("results");
-  announce(`${state.evaluation.filter(record => record.eligibility.status === "eligible").length} MOS options meet all modeled requirements.`);
+  announce(`${state.evaluation.filter(record => record.eligibility.status === "eligible").length} jobs match everything you entered.`);
 }
 
 function fieldLabel(field) {
-  return ({colorVision:"Color vision",citizenship:"Citizenship",driversLicense:"Driver’s license",clearanceEligible:"Clearance eligibility",splitTrainingOption:"Split Training Option",lineScoreWaiverRequested:"Waiver scenario"})[field] || field;
+  return ({colorVision:"Color vision",citizenship:"U.S. citizenship",driversLicense:"Driver’s license",clearanceEligible:"Background/security check",splitTrainingOption:"Split training option",lineScoreWaiverRequested:"Score waiver option"})[field] || field;
 }
 
 function clearValidationErrors() {
@@ -191,6 +209,81 @@ function clearForm() {
   clearValidationErrors();
   state.evaluation = [];
   localStorage.removeItem("idahoMosInputs");
+  togglePulhesDetail();
+}
+
+function togglePulhesDetail() {
+  const toggle = $(".score-score-helper");
+  const checked = toggle && toggle.checked;
+  $("#pulhes-list").hidden = !checked;
+  const help = $("#pulhes-detail-help");
+  if (help) help.hidden = !checked;
+}
+
+function restoreInputs() {
+  try {
+    const stored = JSON.parse(localStorage.getItem("idahoMosInputs") || "{}");
+    for (const score of LINE_SCORES) {
+      const input = document.getElementById(`score-${score}`);
+      if (input && Number.isInteger(stored[score]) && stored[score] >= 0 && stored[score] <= 200) input.value = stored[score];
+    }
+    for (const field of ["colorVision", "citizenship", "driversLicense", "clearanceEligible", "splitTrainingOption", "lineScoreWaiverRequested"]) {
+      const input = document.querySelector(`[name="${field}"]`);
+      if (input && stored[field]) input.value = stored[field];
+    }
+    const helper = $(".score-score-helper");
+    if (helper && stored.pulhesAllOnes === false) {
+      helper.checked = false;
+      for (const factor of Object.keys(PULHES)) {
+        const select = document.getElementById(`pulhes-${factor}`);
+        if (select && stored[`pulhes${factor}`]) select.value = String(stored[`pulhes${factor}`]);
+      }
+    }
+    togglePulhesDetail();
+  } catch { /* Ignore malformed saved input. */ }
+}
+
+function saveInputs(input) {
+  try {
+    const payload = {...input.lineScores};
+    for (const field of ["colorVision", "citizenship", "driversLicense", "clearanceEligible", "splitTrainingOption", "lineScoreWaiverRequested"]) payload[field] = input[field];
+    payload.pulhesAllOnes = input.pulhesAllOnes;
+    for (const factor of Object.keys(PULHES)) payload[`pulhes${factor}`] = input.pulhes[factor] ?? null;
+    localStorage.setItem("idahoMosInputs", JSON.stringify(payload));
+  } catch { /* Storage may be unavailable; non-fatal. */ }
+}
+
+function collectInput(form) {
+  const errors = [];
+  const input = {lineScores: {}, pulhes: {}};
+
+  for (const score of LINE_SCORES) {
+    const raw = form.get(score);
+    const value = Number(raw);
+    if (raw === "" || !Number.isInteger(value) || value < 0 || value > 200) {
+      errors.push({field: `score-${score}`, message: `${score} must be a whole number from 0 to 200.`});
+    } else input.lineScores[score] = value;
+  }
+
+  const helper = $(".score-score-helper");
+  input.pulhesAllOnes = !helper || helper.checked;
+  if (input.pulhesAllOnes) {
+    for (const factor of Object.keys(PULHES)) input.pulhes[factor] = 1;
+  } else {
+    for (const factor of Object.keys(PULHES)) {
+      const raw = form.get(`pulhes${factor}`);
+      if (!raw) errors.push({field: `pulhes-${factor}`, message: `${factor} must be selected.`});
+      else input.pulhes[factor] = raw === "unknown" ? null : Number(raw);
+    }
+  }
+
+  for (const field of ["colorVision", "citizenship", "driversLicense", "clearanceEligible", "splitTrainingOption", "lineScoreWaiverRequested"]) {
+    const value = form.get(field);
+    if (!value) errors.push({field, message: `${fieldLabel(field)} must be selected.`});
+    input[field] = value;
+  }
+
+  return {input, errors};
 }
 
 function evaluateMos(record, input) {
@@ -296,13 +389,29 @@ function resultSort(a, b) {
     || a.mos.localeCompare(b.mos);
 }
 
+function renderStudyGuidance() {
+  const target = $("#study-guidance");
+  if (!target) return;
+  if (!state.evaluation.length) { target.hidden = true; target.innerHTML = ""; return; }
+  const lineScoreKeys = new Map();
+  for (const record of state.evaluation) {
+    for (const item of studyGuidanceFor(record)) {
+      if (!lineScoreKeys.has(item.key)) lineScoreKeys.set(item.key, item.text);
+    }
+  }
+  if (!lineScoreKeys.size) { target.hidden = true; target.innerHTML = ""; return; }
+  target.hidden = false;
+  target.innerHTML = `<h2>Want more options? Study these.</h2><p>Your line scores are built from specific ASVAB sections. Raising the sections below is the fastest way to unlock more jobs. Free practice is available through <a href="https://www.march2success.com/" target="_blank" rel="noopener">March2Success</a> and <a href="https://www.khanacademy.org/" target="_blank" rel="noopener">Khan Academy</a>.</p><ul class="criteria-list">${[...lineScoreKeys.values()].map(text => `<li>${escapeHtml(text)}</li>`).join("")}</ul>`;
+}
+
 function renderResults() {
   if (!state.evaluation.length) {
     $("#results-list").innerHTML = `<div class="empty-state"><h2>No evaluation yet</h2><p>Enter your information to generate explained results.</p></div>`;
     return;
   }
   const counts = state.evaluation.reduce((acc, item) => (acc[item.eligibility.status]++, acc), {eligible:0,waiver:0,review:0,ineligible:0});
-  $("#result-summary").textContent = `${counts.eligible} eligible · ${counts.waiver} waiver scenarios · ${counts.review} need review · ${counts.ineligible} not eligible yet`;
+  $("#result-summary").textContent = `${counts.eligible} jobs you qualify for · ${counts.waiver} close (waiver possible) · ${counts.review} need a recruiter’s check · ${counts.ineligible} not eligible yet`;
+  renderStudyGuidance();
   const query = $("#result-search").value.trim().toLowerCase();
   const category = $("#result-category").value;
   const status = $("#result-status").value;
@@ -381,7 +490,12 @@ function explainCriterion(criterion) {
 }
 
 function nextStepFor(criterion) {
-  if (criterion.kind === "Line score") return criterion.status === "waiver" ? "Ask a recruiter whether a line-score waiver can be submitted; approval is not guaranteed." : "Focus study on the listed line-score area, then ask about retesting and score-improvement options.";
+  if (criterion.kind === "Line score") {
+    if (criterion.status === "waiver") return "Ask a recruiter whether a line-score waiver can be submitted; approval is not guaranteed.";
+    const checks = (criterion.checks || []).filter(check => check.key && !check.pass);
+    if (checks.length) return checks.map(check => studyAdviceFor(check.key, check.required - check.actual)).join(" ");
+    return "Study the areas behind this line score, then ask about retesting and score-improvement options.";
+  }
   if (criterion.kind === "PULHES") return "Ask a recruiter or MEPS counselor to verify the official profile and MOS medical standard.";
   if (criterion.kind === "Color vision") return "Confirm the official color-vision result and ask about MOSs with a compatible standard.";
   if (criterion.kind === "Driver’s license") return "Obtain or verify a valid license, or compare MOSs without this workbook requirement.";
@@ -391,8 +505,25 @@ function nextStepFor(criterion) {
   return "Have a recruiter verify this requirement before choosing an MOS.";
 }
 
+function studyAdviceFor(key, gap) {
+  const entry = STUDY_MAP[key];
+  if (!entry) return `Study the areas that build your ${key} score, then ask about retesting.`;
+  return `${entry.name} (${key}) comes from ${entry.build}. Study ${entry.what}.`;
+}
+
+// Builds a plain-language list of "what to study" items for the line-score
+// gaps on a record that isn't eligible yet. Returns an empty array if there
+// are no line-score gaps to study for.
+function studyGuidanceFor(record) {
+  const criteria = record.eligibility?.criteria || [];
+  const lineCriterion = criteria.find(c => c.kind === "Line score" && (c.status === "fail" || c.status === "waiver"));
+  if (!lineCriterion) return [];
+  const checks = (lineCriterion.checks || []).filter(check => check.key && !check.pass).sort((a, b) => b.gap - a.gap);
+  return checks.map(check => ({key: check.key, text: studyAdviceFor(check.key, check.gap)}));
+}
+
 function eligibilityBadge(status) {
-  const labels = {eligible:"Eligible",waiver:"Waiver scenario",review:"Needs review",ineligible:"Not eligible yet"};
+  const labels = {eligible:"You qualify",waiver:"Close — may qualify with a waiver",review:"A recruiter should check this",ineligible:"Not eligible yet"};
   return `<span class="status-badge status-${status}">${labels[status]}</span>`;
 }
 
@@ -435,7 +566,7 @@ function openDetail(mos, refreshOnly = false) {
     <section class="detail-section"><h3>Idaho status</h3><p>${escapeHtml(availabilityText(record))}</p></section>
     ${criteria.length ? `<section class="detail-section"><h3>Why this result</h3><ul class="criteria-list">${criteria.filter(c => c.status !== "not_applicable").map(c => `<li class="${c.status === "fail" ? "fail" : c.status === "unknown" ? "unknown" : ""}"><strong>${escapeHtml(c.kind)}:</strong> ${escapeHtml(c.summary)}</li>`).join("")}</ul></section>` : ""}
     <section class="detail-section"><h3>Workbook requirements</h3><ul class="criteria-list"><li><strong>Line score:</strong> ${escapeHtml(record.requirements.line_score_text)}</li><li><strong>PULHES:</strong> ${escapeHtml(record.requirements.pulhes_text)}</li><li><strong>Vision:</strong> ${escapeHtml(record.requirements.vision_text)}</li><li><strong>Physical demand:</strong> ${escapeHtml(record.requirements.physical_demand || "Not listed")}</li><li><strong>AIT:</strong> ${escapeHtml(record.training.ait_length_text || "Confirm with recruiter")}</li></ul></section>
-    ${record.eligibility && record.eligibility.status !== "eligible" ? `<section class="detail-section next-step-panel"><h3>Your path forward</h3><ul class="criteria-list">${record.eligibility.criteria.filter(c => ["fail", "unknown", "waiver"].includes(c.status)).map(c => `<li><strong>${escapeHtml(c.kind)}:</strong> ${escapeHtml(explainCriterion(c))}<small>${escapeHtml(nextStepFor(c))}</small></li>`).join("")}</ul></section>` : ""}
+    ${record.eligibility && record.eligibility.status !== "eligible" ? `<section class="detail-section next-step-panel"><h3>Your path forward</h3><ul class="criteria-list">${record.eligibility.criteria.filter(c => ["fail", "unknown", "waiver"].includes(c.status)).map(c => `<li><strong>${escapeHtml(c.kind)}:</strong> ${escapeHtml(explainCriterion(c))}<small>${escapeHtml(nextStepFor(c))}</small></li>`).join("")}</ul>${studyGuidanceFor(record).length ? `<div class="study-box"><strong>What to study</strong><ul>${studyGuidanceFor(record).map(item => `<li>${escapeHtml(item.text)}</li>`).join("")}</ul><p class="source-note">Free practice: <a href="https://www.march2success.com/" target="_blank" rel="noopener">March2Success</a> and <a href="https://www.khanacademy.org/" target="_blank" rel="noopener">Khan Academy</a>. Ask your recruiter about retesting.</p></div>` : ""}</section>` : ""}
     <section class="detail-section"><h3>Next step</h3><div class="actions">${videoUrl ? `<a class="button secondary" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener">Watch MOS video</a>` : ""}<button class="button primary" type="button" data-save="${escapeHtml(record.mos)}">${state.saved.has(record.mos) ? "Remove from saved" : "Save this MOS"}</button></div><p class="source-note">Qualification estimate only. Final MOS eligibility and vacancy availability require official review.</p></section>`;
   if (!refreshOnly) $("#mos-dialog").showModal();
 }
