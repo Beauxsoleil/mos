@@ -5,7 +5,7 @@ A static, mobile-first GitHub Pages web app that explores Idaho Army National Gu
 ## What it does
 
 - Evaluates ten Army line scores, PULHES, color vision, citizenship, driver’s-license status, clearance screening, Split Training Option status, and modeled waiver scenarios.
-- Organizes all 152 workbook records by MOS category.
+- Organizes all 151 workbook records by MOS category.
 - Separates applicant eligibility from time-stamped Idaho availability evidence.
 - Shows exact requirement gaps, plain-language reasons for every “not eligible yet” result, practical next steps, workbook criteria, training length, and videos where available.
 - Saves a shortlist locally without requiring an account or sending personal data.
