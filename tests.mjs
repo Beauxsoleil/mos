@@ -22,6 +22,8 @@ const scoreReason = vm.runInContext(`(() => {
   return {status: result.status, gap: result.gap, explanation: explainCriterion({...result, kind:"Line score"})};
 })()`, sandbox);
 if (scoreReason.status !== "fail" || scoreReason.gap !== 4 || !scoreReason.explanation.includes("4 points short")) throw new Error("Line-score gap explanation is incorrect");
+const studyAdvice = vm.runInContext(`studyAdviceFor("GT", 6)`, sandbox);
+if (!studyAdvice.includes("Word Knowledge") || !studyAdvice.includes("Arithmetic Reasoning")) throw new Error("Study guidance does not name GT subtests");
 const waiverStatus = vm.runInContext(`evaluateLineRule("GM>=88", {GM:85}, true, "").status`, sandbox);
 if (waiverStatus !== "waiver") throw new Error("Expected modeled non-GT waiver scenario");
 const gtWaiverStatus = vm.runInContext(`evaluateLineRule("GT>=110", {GT:107}, true, "").status`, sandbox);

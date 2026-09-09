@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#24362d">
+  <meta name="theme-color" content="#f2f2f7">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000">
   <meta name="description" content="Explore Idaho Army National Guard MOS pathways and estimate eligibility from line scores and screening information.">
   <meta name="robots" content="index,follow">
   <link rel="canonical" href="https://beauxsoleil.github.io/mos/">
@@ -54,11 +55,15 @@
     <section id="home" class="view hero-view" data-view="home">
       <div class="hero-copy">
         <p class="eyebrow">Idaho Army National Guard career explorer</p>
-        <h1>Find an MOS that fits what you bring.</h1>
-        <p class="lede">Use your Army line scores and screening information to explore potential paths. No account is required, and your answers stay on this device.</p>
+        <h1>See which Army jobs your scores unlock.</h1>
+        <p class="lede">Type in your ASVAB line scores and instantly see which jobs you qualify for — and exactly what to study to unlock more. No account, and your answers never leave your device.</p>
         <div class="actions">
           <a class="button primary" href="#eligibility" data-route="eligibility">Check my eligibility</a>
           <a class="button secondary" href="#careers" data-route="careers">Browse all careers</a>
+        </div>
+        <div class="benefit-strip">
+          <span aria-hidden="true">🎓</span>
+          <p><strong>What’s in it for you:</strong> college tuition help, real job skills, and pay for one weekend a month — while you live and work in Idaho. <a href="https://www.serveinidaho.com/" target="_blank" rel="noopener">See official benefits</a>.</p>
         </div>
         <div class="privacy-callout">
           <span aria-hidden="true">✓</span>
@@ -79,62 +84,70 @@
 
     <section id="eligibility" class="view" data-view="eligibility" hidden>
       <div class="section-heading">
-        <p class="eyebrow">Anonymous eligibility estimate</p>
-        <h1>Enter your information</h1>
-        <p>Use the line scores shown on your official score record. Fields marked required must be completed before evaluation.</p>
+        <p class="eyebrow">Private — nothing is sent anywhere</p>
+        <h1>Enter your scores</h1>
+        <p>Grab your score report and type in the ten line scores. Everything stays on your phone or computer — no account, no name, no Social Security number.</p>
       </div>
       <form id="eligibility-form" novalidate>
         <div id="error-summary" class="error-summary" role="alert" tabindex="-1" hidden></div>
 
-        <fieldset class="form-card">
-          <legend><span>1</span> Army line scores</legend>
-          <p class="field-help">These are composite line scores—not ASVAB percentile or raw subtest scores.</p>
-          <div id="line-score-grid" class="score-grid"></div>
-        </fieldset>
+        <section class="form-section">
+          <h2 class="section-label">Line scores</h2>
+          <p class="field-help">Type the ten two-letter codes exactly as they appear on your score report (for example, <strong>GT 110</strong>). These are “composite” line scores — not your percentile or your raw subtest scores.</p>
+          <div id="line-score-list" class="list"></div>
+        </section>
 
-        <fieldset class="form-card">
-          <legend><span>2</span> PULHES profile</legend>
-          <p class="field-help">Choose your official profile values. If you have not received a profile, select “Not yet rated.”</p>
-          <div id="pulhes-grid" class="pulhes-grid"></div>
-        </fieldset>
-
-        <fieldset class="form-card">
-          <legend><span>3</span> Screening information</legend>
-          <p class="field-help">These answers screen workbook requirements; they do not grant a medical qualification or security clearance.</p>
-          <div class="question-grid">
-            <label>Color vision<select name="colorVision" required aria-describedby="error-colorVision"><option value="">Select</option><option value="normal">Normal</option><option value="red_green">Red/green only</option><option value="no_color">No color vision</option><option value="unknown">Unknown</option></select><span class="field-error" id="error-colorVision"></span></label>
-            <label>U.S. citizenship<select name="citizenship" required aria-describedby="error-citizenship"><option value="">Select</option><option value="us_citizen">U.S. citizen</option><option value="non_citizen">Not a U.S. citizen</option><option value="unknown">Unknown</option></select><span class="field-error" id="error-citizenship"></span></label>
-            <label>Driver’s license<select name="driversLicense" required aria-describedby="error-driversLicense"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option><option value="unknown">Unknown</option></select><span class="field-error" id="error-driversLicense"></span></label>
-            <label>Potentially clearance eligible<select name="clearanceEligible" required aria-describedby="error-clearanceEligible"><option value="">Select</option><option value="yes">Yes / no known issue</option><option value="no">No / known issue</option><option value="unknown">Unknown</option></select><span class="field-error" id="error-clearanceEligible"></span></label>
-            <label>Split Training Option applicant<select name="splitTrainingOption" required aria-describedby="error-splitTrainingOption"><option value="">Select</option><option value="no">No</option><option value="yes">Yes</option><option value="unknown">Unknown</option></select><span class="field-error" id="error-splitTrainingOption"></span></label>
-            <label>Show line-score waiver scenarios<select name="lineScoreWaiverRequested" required aria-describedby="error-lineScoreWaiverRequested"><option value="">Select</option><option value="no">No</option><option value="yes">Yes</option></select><span class="field-error" id="error-lineScoreWaiverRequested"></span></label>
+        <section class="form-section">
+          <h2 class="section-label">Medical profile</h2>
+          <p class="field-help">Almost everyone entering has a “111111” profile (all 1s means no known medical restrictions). We’ll assume that’s you unless you say otherwise.</p>
+          <div class="list">
+            <label class="row switch-row">
+              <span class="row-label">All 1s — no restrictions<small>PULHES 111111</small></span>
+              <input type="checkbox" class="score-score-helper" checked>
+            </label>
           </div>
-        </fieldset>
+          <p class="field-help" id="pulhes-detail-help" hidden>If your official profile has any number other than 1, enter it below. “Not yet rated” means you haven’t been through a medical screening yet.</p>
+          <div id="pulhes-list" class="list" hidden></div>
+        </section>
+
+        <section class="form-section">
+          <h2 class="section-label">A few quick questions</h2>
+          <p class="field-help">These help narrow down which jobs could fit. They don’t grant a clearance or a medical qualification — a recruiter always confirms.</p>
+          <div class="list">
+            <label class="row question-row"><span class="row-label">Color vision</span><select name="colorVision" required aria-describedby="error-colorVision"><option value="">Select</option><option value="normal">Normal</option><option value="red_green">Red/green colorblind</option><option value="no_color">No color vision</option><option value="unknown">Not sure</option></select><span class="field-error" id="error-colorVision"></span></label>
+            <label class="row question-row"><span class="row-label">U.S. citizenship</span><select name="citizenship" required aria-describedby="error-citizenship"><option value="">Select</option><option value="us_citizen">U.S. citizen</option><option value="non_citizen">Not a U.S. citizen</option><option value="unknown">Not sure</option></select><span class="field-error" id="error-citizenship"></span></label>
+            <label class="row question-row"><span class="row-label">Driver’s license</span><select name="driversLicense" required aria-describedby="error-driversLicense"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option><option value="unknown">Not sure</option></select><span class="field-error" id="error-driversLicense"></span></label>
+            <label class="row question-row"><span class="row-label">Background/security check</span><select name="clearanceEligible" required aria-describedby="error-clearanceEligible"><option value="">Select</option><option value="yes">Yes / no known issue</option><option value="no">No / known issue</option><option value="unknown">Not sure</option></select><span class="field-error" id="error-clearanceEligible"></span></label>
+            <label class="row question-row"><span class="row-label">Split training option<small>Still in high school — train one summer, finish school, then train again.</small></span><select name="splitTrainingOption" required aria-describedby="error-splitTrainingOption"><option value="">Select</option><option value="no">No</option><option value="yes">Yes</option><option value="unknown">Not sure</option></select><span class="field-error" id="error-splitTrainingOption"></span></label>
+            <label class="row question-row"><span class="row-label">Score waiver<small>Show jobs I’m close to, where a recruiter might request a waiver.</small></span><select name="lineScoreWaiverRequested" required aria-describedby="error-lineScoreWaiverRequested"><option value="">Select</option><option value="no">No</option><option value="yes">Yes</option></select><span class="field-error" id="error-lineScoreWaiverRequested"></span></label>
+          </div>
+        </section>
 
         <div class="form-actions">
           <button class="button text-button" type="button" id="clear-form">Clear my data</button>
-          <button class="button primary" type="submit">Evaluate MOS options</button>
+          <button class="button primary" type="submit">Show my jobs</button>
         </div>
       </form>
     </section>
 
     <section id="results" class="view" data-view="results" hidden>
       <div class="section-heading results-heading">
-        <div><p class="eyebrow">Your estimate</p><h1>MOS results</h1><p id="result-summary">Complete the eligibility form to see results.</p></div>
-        <button class="button secondary compact" type="button" data-route-button="eligibility">Edit inputs</button>
+        <div><p class="eyebrow">Your results</p><h1>Your jobs</h1><p id="result-summary">Enter your scores to see results.</p></div>
+        <button class="button secondary compact" type="button" data-route-button="eligibility">Edit my scores</button>
       </div>
-      <div class="freshness-banner"><strong>Availability is not a reservation.</strong> “Posting seen” and “Idaho catalog-listed” are time-stamped public evidence. A recruiter must confirm a current, contractable vacancy.</div>
-      <div class="results-guide"><strong>Not eligible yet?</strong> Each result names the requirement that is holding it back and gives a next step. Unknown information is never counted as a pass.</div>
+      <div id="study-guidance" class="study-guidance" hidden></div>
+      <div class="freshness-banner"><strong>A job posting isn’t a guarantee.</strong> “Posting seen” and “Idaho catalog” labels are dated public evidence. A recruiter must confirm the job is actually open right now.</div>
+      <div class="results-guide"><strong>Not eligible yet?</strong> Every result tells you what’s holding it back and what to do next. If we don’t know something, we never count it as a pass.</div>
       <div class="filters" aria-label="Result filters">
         <label>Search<input id="result-search" type="search" placeholder="MOS or job title"></label>
         <label>Category<select id="result-category"><option value="all">All categories</option></select></label>
-        <label>Result<select id="result-status"><option value="all">All results</option><option value="eligible">Eligible</option><option value="waiver">Waiver scenario</option><option value="review">Needs review</option><option value="ineligible">Not eligible yet</option></select></label>
+        <label>Result<select id="result-status"><option value="all">All results</option><option value="eligible">You qualify</option><option value="waiver">Close (waiver possible)</option><option value="review">Recruiter should check</option><option value="ineligible">Not eligible yet</option></select></label>
       </div>
       <div id="results-list" class="catalog-sections" aria-live="polite"></div>
     </section>
 
     <section id="careers" class="view" data-view="careers" hidden>
-      <div class="section-heading"><p class="eyebrow">Explore before you test</p><h1>Career catalog</h1><p>Browse all workbook pathways. Idaho labels show public evidence—not guaranteed openings.</p></div>
+      <div class="section-heading"><p class="eyebrow">Explore before you test</p><h1>All the jobs</h1><p>Browse every job. The Idaho labels are dated public evidence — not a guarantee the job is open right now.</p></div>
       <div class="filters">
         <label>Search<input id="career-search" type="search" placeholder="Try medic, mechanic, 25B…"></label>
         <label>Category<select id="career-category"><option value="all">All categories</option></select></label>
@@ -152,7 +165,7 @@
     <section id="recruiter" class="view" data-view="recruiter" hidden>
       <div class="section-heading"><p class="eyebrow">Final confirmation</p><h1>Talk with an Idaho recruiter</h1><p>A recruiter can confirm vacancies, review exceptions, and explain the enlistment pathway.</p></div>
       <div class="recruiter-layout">
-        <article class="form-card recruiter-card"><h2>What to bring</h2><ul class="checklist"><li>Your official score report</li><li>Any known PULHES information</li><li>Your top three saved MOSs</li><li>Questions about location, training, bonus, and availability</li></ul></article>
+        <article class="form-card recruiter-card"><h2>What to bring</h2><ul class="checklist"><li>Your official score report</li><li>Any known medical-profile (PULHES) details</li><li>Your top three saved jobs</li><li>Questions about location, training, bonuses, and what’s open</li></ul></article>
         <article class="form-card recruiter-card"><h2>Idaho Army National Guard</h2><p>Call <a href="tel:+12085146197">208-514-6197</a> or use the official recruiting contact page.</p><a class="button primary" href="https://www.serveinidaho.com/contact" target="_blank" rel="noopener">Open official contact page</a><p class="small">This site does not transmit your calculator answers.</p></article>
       </div>
     </section>
@@ -164,11 +177,11 @@
   </footer>
 
   <nav class="mobile-nav" aria-label="Mobile navigation">
-    <a href="#home" data-route="home"><span aria-hidden="true">⌂</span>Home</a>
-    <a href="#eligibility" data-route="eligibility"><span aria-hidden="true">✓</span>Eligibility</a>
-    <a href="#careers" data-route="careers"><span aria-hidden="true">▦</span>Careers</a>
-    <a href="#saved" data-route="saved"><span aria-hidden="true">☆</span>Saved</a>
-    <a href="#recruiter" data-route="recruiter"><span aria-hidden="true">○</span>Recruiter</a>
+    <a href="#home" data-route="home"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.7 20.6 10a1 1 0 0 1 .4.8V20a1 1 0 0 1-1 1h-4.5v-5.4a1.6 1.6 0 0 0-1.6-1.6h-3.8a1.6 1.6 0 0 0-1.6 1.6V21H4a1 1 0 0 1-1-1v-9.2a1 1 0 0 1 .4-.8L12 2.7Z"/></svg>Home</a>
+    <a href="#eligibility" data-route="eligibility"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="3"/><path d="m9 11 2 2 4-4"/></svg>Eligibility</a>
+    <a href="#careers" data-route="careers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>Jobs</a>
+    <a href="#saved" data-route="saved"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h12a1 1 0 0 1 1 1v15l-4.5-3L10 20l-3-3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/></svg>Saved</a>
+    <a href="#recruiter" data-route="recruiter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-5 8-5s8 1.7 8 5"/></svg>Recruiter</a>
   </nav>
 
   <dialog id="mos-dialog" aria-labelledby="dialog-title">
